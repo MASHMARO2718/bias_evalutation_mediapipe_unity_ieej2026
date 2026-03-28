@@ -1,0 +1,46 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+.venv
+venv
+.env
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# 画像・動画（大容量）
+01_input_photos/
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.gif
+**/*.mp4
+**/*.avi
+
+# 開発・デバッグ
+**/debug_data/
+**/logs/
+*.log
+10_dev/
+
+# 検証テスト（本番不要）
+08_theta_verification/
+
+# ドキュメント（必要なら含める）
+# *.md は含める（README等）
+
+# Docker 関連（ビルド時に不要）
+.dockerignore
+docker/
+docker-compose*.yml

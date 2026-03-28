@@ -1,0 +1,73 @@
+     #########################################
+     ###  電気学会 LaTeX2e クラスファイル  ###
+     #########################################
+
+1. ieej.cls の現在のバージョンは
+      [2022/04/06 v5.0]
+   です。
+   注1：v2.4 より \ecaption はなくなりました。
+   注2：欧文書体にタイムス系を使用します (txfonts --> newtxtext)。
+   注3：v3.0 より著者のメールアドレスを出力できるようになりました。
+   注4：著者が複数の場合，著者名を1行に3名ずつ出力するできるようになりました。
+   注5：柱の体裁が変更になりました。
+   注6：Extended Summary はなくなりました。
+   注7：新たに \NoteIntConf コマンドを定義しました．
+
+2. 以下のファイルがあります。
+     ieej.cls          クラスファイル
+     readme.tex        クラスファイルの使い方
+     readme.pdf        クラスファイルの使い方 (pdf)
+     template-j.tex    和文用テンプレート
+     template-e.tex    英文用テンプレート
+   コンパイルに必要なファイルは，ieej.cls だけです。
+   readme.tex がこのクラスファイルを使用した場合のサンプルです。
+   論文作成の雛形として template-(je).tex を利用できます。
+   文献用スタイル（bst）については readme.pdf をご覧ください。
+
+3. 本クラスファイルは，アスキー版日本語 (u)pTeX を元に作成しました。
+   NTT版 には対応していません。
+   作成にあたっては，
+   e-upTeX, Version 3.14159265-p3.6-u1.20-141210-2.6 (utf8.uptex)
+    (TeX Live 2015)
+   e-upTeX, Version 3.14159265-p3.8.1-u1.23-180226-2.6 (utf8.uptex)
+    (TeX Live 2018)
+   e-upTeX, Version 3.14159265-p3.8.3-u1.26-191112-2.6 (utf8.uptex)
+    (TeX Live 2020)
+   e-upTeX, Version 3.141592653-p3.9.0-u1.27-210218-2.6 (utf8.uptex)
+    (TeX Live 2021)
+   で動作確認しました。
+   LuaTeXについて：
+     LuaHBTeX, Version 1.12.0 (TeX Live 2020)
+     LuaHBTeX, Version 1.13.2 (TeX Live 2021)
+   で動作確認しました。
+   パッケージなどを追加で読み込むことなく，そのまま LuaTeX でも動作します。
+   しかし，LuaTeX は今後も仕様が変更になることが予想されます。
+   upLaTeX か pLaTeX での使用をお勧めします。
+
+4. readme.tex は (u)platex でのコンパイルを想定しています。
+   LuaLaTeX で hyperref を利用する場合は readme.tex の
+     \usepackage[dvipdfmx]{graphicx}
+     \usepackage[dvipdfmx]{hyperref}
+     \usepackage{pxjahyper}
+   に代えて，
+     \usepackage{graphicx}
+     \usepackage[luatex,pdfencoding=auto]{hyperref}
+   を使ってください。
+
+5. A4用紙に出力する場合は，
+      プリンタドライバーの設定でマージンを変える。
+      お使いのプリンタドライバーのマニュアルを参照して下さい。
+      dvips をお使いの場合は，
+         dvips -Pprintername -t a4 -O 0mm,0mm readme.dvi
+      くらいの設定になります（お使いのプリンタで調整が必要です）。
+   のような対処の仕方があります。
+
+6. 本クラスファイルに関わる質問はメールでお願いいたします。
+   TeX や LaTeX の一般的な質問にはお答えいたしかねます。
+   書籍などを参照してください。
+
+                                                            2022年4月6日
+                                                     (株)ウルス 佐藤基昭
+                         E-mail: teppei@uls.co.jp, http://www.uls.co.jp/
+                                    〒113-0022 東京都文京区千駄木3-21-15
+                                   TEL: 03-5842-1290 / FAX: 03-5842-1295

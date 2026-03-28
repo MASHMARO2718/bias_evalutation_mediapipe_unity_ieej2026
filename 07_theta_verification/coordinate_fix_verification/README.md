@@ -1,12 +1,12 @@
 # Y軸反転の検証
 
 06_direction_detection の coordinate_transform を変更せず、
-08_theta_verification 内で Y 反転の効果を検証する。
+07_theta_verification 内で Y 反転の効果を検証する。
 
 ## 実行
 
 ```bash
-cd 08_theta_verification/coordinate_fix_verification
+cd 07_theta_verification/coordinate_fix_verification
 python verify_y_flip.py
 ```
 

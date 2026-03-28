@@ -18,7 +18,7 @@
 
 ```
 実データのルート: C:\projects\MOTIONTRACK\Zeval_DataSet\
-論文作業フォルダ: C:\projects\MOTIONTRACK\Zeval_DataSet_organized\07_paper\
+論文作業フォルダ: C:\projects\MOTIONTRACK\Zeval_DataSet_organized\paper\
 ```
 
 以下がフォルダ名の対応表です。必ず `Zeval_DataSet\` を参照してください。
@@ -29,16 +29,15 @@
 | `04_mae_heatmap/Y=0.5,1.5/`          | `Zeval_DataSet\4_MAE_HEATMAP\Y=0.5,1.5\`               |
 | `04_mae_heatmap/Y=1.0.2.0/`          | `Zeval_DataSet\4_MAE_HEATMAP\Y=1.0.2.0\`               |
 | `08_theta_verification/`              | `Zeval_DataSet\10_theta_verification\`                   |
-| `07_paper/Images/`                    | `Zeval_DataSet\8_Paper\Images\`                          |
-| `07_paper/Images/Graph/`             | `Zeval_DataSet\8_Paper\Images\Graph\`                    |
+| `paper/source/figs/`（現行原稿の図）   | 主に本リポジトリ `paper/source/figs/`（原本）            |
+| （旧）`07_paper/Images/`              | `Zeval_DataSet\8_Paper\Images\`                          |
 | `correlation_analysis/heatmap_*.png` | `Zeval_DataSet\8_Paper\correlation_analysis\`            |
 
 ---
 
 ## 作業の全体像
 
-論文 `07_paper/paper_extended.tex` には `%%TODO%%` / `%%MEAN%%` / `%%SD%%` /
-`%%TODO_PATH_*%%` などのプレースホルダーが埋め込まれています。
+論文 `paper/source/main.tex`（旧 `paper_extended.tex`）に数値・図を反映する際の参照用です。
 あなたの仕事は §1〜§8 の各タスクを実行し、
 プレースホルダーに入れるべき **実際の数値・ファイルパス・テキスト** を返すことです。
 

@@ -22,7 +22,7 @@
 % Title information
 \title{Accuracy Evaluation of MediaPipe Pose Estimation Using a Unity Environment}
 \author{%
-  Non-member\quad Fumima Taira$^{*a)}$ \qquad
+  Non-member\quad Fumimaro Taira$^{*a)}$ \qquad
   Member\quad Tsukasa Kato$^{*b)}$ \qquad
   Non-member\quad Jin Afuso$^{*c)}$\footnotemark[1]
 }

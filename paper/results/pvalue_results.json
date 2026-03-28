@@ -1,0 +1,110 @@
+{
+  "theta": [
+    {
+      "joint1": "LEFT_ELBOW",
+      "joint2": "RIGHT_ELBOW",
+      "r": -0.8622,
+      "p_value": 0.0,
+      "p_str": "0.00e+00",
+      "significant_001": true
+    },
+    {
+      "joint1": "LEFT_ELBOW",
+      "joint2": "LEFT_SHOULDER",
+      "r": 0.7876,
+      "p_value": 0.0,
+      "p_str": "0.00e+00",
+      "significant_001": true
+    },
+    {
+      "joint1": "RIGHT_ANKLE",
+      "joint2": "RIGHT_KNEE",
+      "r": 0.7669,
+      "p_value": 0.0,
+      "p_str": "0.00e+00",
+      "significant_001": true
+    },
+    {
+      "joint1": "LEFT_ANKLE",
+      "joint2": "LEFT_KNEE",
+      "r": 0.7664,
+      "p_value": 0.0,
+      "p_str": "0.00e+00",
+      "significant_001": true
+    },
+    {
+      "joint1": "RIGHT_ELBOW",
+      "joint2": "RIGHT_SHOULDER",
+      "r": 0.7105,
+      "p_value": 0.0,
+      "p_str": "0.00e+00",
+      "significant_001": true
+    }
+  ],
+  "psi": [
+    {
+      "joint1": "LEFT_HIP",
+      "joint2": "RIGHT_HIP",
+      "r": -0.8402,
+      "p_value": 0.0,
+      "p_str": "0.00e+00",
+      "significant_001": true
+    },
+    {
+      "joint1": "RIGHT_ELBOW",
+      "joint2": "RIGHT_SHOULDER",
+      "r": 0.7697,
+      "p_value": 0.0,
+      "p_str": "0.00e+00",
+      "significant_001": true
+    },
+    {
+      "joint1": "RIGHT_ELBOW",
+      "joint2": "RIGHT_WRIST",
+      "r": 0.7691,
+      "p_value": 0.0,
+      "p_str": "0.00e+00",
+      "significant_001": true
+    },
+    {
+      "joint1": "LEFT_ELBOW",
+      "joint2": "LEFT_SHOULDER",
+      "r": 0.768,
+      "p_value": 0.0,
+      "p_str": "0.00e+00",
+      "significant_001": true
+    },
+    {
+      "joint1": "RIGHT_SHOULDER",
+      "joint2": "RIGHT_WRIST",
+      "r": 0.7258,
+      "p_value": 0.0,
+      "p_str": "0.00e+00",
+      "significant_001": true
+    },
+    {
+      "joint1": "LEFT_ELBOW",
+      "joint2": "LEFT_WRIST",
+      "r": 0.7217,
+      "p_value": 0.0,
+      "p_str": "0.00e+00",
+      "significant_001": true
+    },
+    {
+      "joint1": "RIGHT_ELBOW",
+      "joint2": "RIGHT_HIP",
+      "r": 0.7212,
+      "p_value": 0.0,
+      "p_str": "0.00e+00",
+      "significant_001": true
+    },
+    {
+      "joint1": "LEFT_HIP",
+      "joint2": "RIGHT_ELBOW",
+      "r": -0.7052,
+      "p_value": 0.0,
+      "p_str": "0.00e+00",
+      "significant_001": true
+    }
+  ]
+}

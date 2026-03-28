@@ -1,0 +1,74 @@
+[
+  {
+    "key": "blazepose",
+    "status": "downloaded",
+    "file": "blazepose.pdf",
+    "title": "BlazePose: On-device real-time body pose tracking"
+  },
+  {
+    "key": "peoplesanspeople",
+    "status": "downloaded",
+    "file": "peoplesanspeople.pdf",
+    "title": "PeopleSansPeople: A synthetic data generator for human-centric computer vision"
+  },
+  {
+    "key": "coco",
+    "status": "downloaded",
+    "file": "coco.pdf",
+    "title": "Microsoft COCO: Common Objects in Context"
+  },
+  {
+    "key": "surreal",
+    "status": "downloaded",
+    "file": "surreal.pdf",
+    "title": "Learning from Synthetic Humans"
+  },
+  {
+    "key": "agora",
+    "status": "downloaded",
+    "file": "agora.pdf",
+    "title": "AGORA: Avatars in Geography Optimized for Regression Analysis"
+  },
+  {
+    "key": "mehta2017",
+    "status": "downloaded",
+    "file": "mehta2017.pdf",
+    "title": "Monocular 3D Human Pose Estimation In The Wild Using Improved CNN Supervision"
+  },
+  {
+    "key": "vnect",
+    "status": "downloaded",
+    "file": "vnect.pdf",
+    "title": "VNect: Real-time 3D Human Pose Estimation with a Single RGB Camera"
+  },
+  {
+    "key": "poseformer",
+    "status": "downloaded",
+    "file": "poseformer.pdf",
+    "title": "3D Human Pose Estimation with Spatial and Temporal Transformers"
+  },
+  {
+    "key": "motionbert",
+    "status": "downloaded",
+    "file": "motionbert.pdf",
+    "title": "MotionBERT: A Unified Perspective on Learning Human Motion Representations"
+  },
+  {
+    "key": "h36m",
+    "status": "not_available",
+    "file": null,
+    "title": "Human3.6M: Large Scale Datasets and Predictive Methods for 3D Human Sensing in Natural Environments"
+  },
+  {
+    "key": "openpose",
+    "status": "downloaded",
+    "file": "openpose.pdf",
+    "title": "OpenPose: Realtime Multi-Person 2D Pose Estimation Using Part Affinity Fields"
+  },
+  {
+    "key": "mroz2021",
+    "status": "not_available",
+    "file": null,
+    "title": "Comparing the quality of human pose estimation with BlazePose or OpenPose"
+  }
+]

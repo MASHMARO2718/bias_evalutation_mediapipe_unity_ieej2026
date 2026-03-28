@@ -1,0 +1,16 @@
+{
+  "LEFT_HIP": {
+    "n": 21613,
+    "theta_abs_mean": 83.5,
+    "theta_abs_sd": 72.5,
+    "psi_abs_mean": 88.9,
+    "psi_abs_sd": 26.4
+  },
+  "RIGHT_HIP": {
+    "n": 21613,
+    "theta_abs_mean": 96.5,
+    "theta_abs_sd": 72.5,
+    "psi_abs_mean": 91.1,
+    "psi_abs_sd": 26.4
+  }
+}

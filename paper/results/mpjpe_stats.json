@@ -1,0 +1,90 @@
+{
+  "overall_mean_error3d": 0.3626,
+  "unit_note": "MediaPipe world coordinates: mean bone length across skeleton ~ 1.0 (dimensionless). error_3d is Euclidean distance in those units. Approximate metric scale: 1 world unit ~ 1 m for a 1.7m subject. True MPJPE requires per-subject height normalization.",
+  "per_joint": [
+    {
+      "joint": "LEFT_ANKLE",
+      "mean": 0.7084,
+      "std": 0.0806,
+      "median": 0.7103,
+      "max": 1.6045
+    },
+    {
+      "joint": "LEFT_ELBOW",
+      "mean": 0.3052,
+      "std": 0.0572,
+      "median": 0.2931,
+      "max": 0.8406
+    },
+    {
+      "joint": "LEFT_HIP",
+      "mean": 0.044,
+      "std": 0.0166,
+      "median": 0.0434,
+      "max": 0.1973
+    },
+    {
+      "joint": "LEFT_KNEE",
+      "mean": 0.4009,
+      "std": 0.0388,
+      "median": 0.4024,
+      "max": 0.8471
+    },
+    {
+      "joint": "LEFT_SHOULDER",
+      "mean": 0.3267,
+      "std": 0.0387,
+      "median": 0.332,
+      "max": 1.0188
+    },
+    {
+      "joint": "LEFT_WRIST",
+      "mean": 0.3617,
+      "std": 0.0682,
+      "median": 0.3449,
+      "max": 1.0846
+    },
+    {
+      "joint": "RIGHT_ANKLE",
+      "mean": 0.7144,
+      "std": 0.0891,
+      "median": 0.7141,
+      "max": 1.5825
+    },
+    {
+      "joint": "RIGHT_ELBOW",
+      "mean": 0.3217,
+      "std": 0.055,
+      "median": 0.3118,
+      "max": 0.8415
+    },
+    {
+      "joint": "RIGHT_HIP",
+      "mean": 0.044,
+      "std": 0.0166,
+      "median": 0.0434,
+      "max": 0.1973
+    },
+    {
+      "joint": "RIGHT_KNEE",
+      "mean": 0.406,
+      "std": 0.0396,
+      "median": 0.4074,
+      "max": 0.753
+    },
+    {
+      "joint": "RIGHT_SHOULDER",
+      "mean": 0.3211,
+      "std": 0.0421,
+      "median": 0.3283,
+      "max": 1.0255
+    },
+    {
+      "joint": "RIGHT_WRIST",
+      "mean": 0.3967,
+      "std": 0.0729,
+      "median": 0.3794,
+      "max": 1.0923
+    }
+  ]
+}

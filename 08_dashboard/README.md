@@ -7,7 +7,7 @@
 python run.py --dashboard
 
 # ダッシュボード起動
-python 09_dashboard/app.py
+python 08_dashboard/app.py
 ```
 
 ブラウザで http://127.0.0.1:8050/ を開く。

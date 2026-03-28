@@ -1,0 +1,1546 @@
+%%%
+%% v5.0 [2022/04/06]
+\documentclass[fleqn]{ieej}
+%\documentclass[letter,fleqn]{ieej}
+%\documentclass[english,fleqn]{ieej}
+%\documentclass[english,letter,fleqn]{ieej}
+%\documentclass[comment,fleqn]{ieej}
+%\documentclass[feature,fleqn]{ieej}
+%\documentclass[foreword,fleqn]{ieej}
+%\documentclass[essay,fleqn]{ieej}
+%\usepackage{amsthm}
+\usepackage[defaultsups]{newtxtext}
+\usepackage[varg]{newtxmath}
+\usepackage[superscript,nomove]{cite}
+\usepackage[dvipdfmx]{graphicx}% for (u)platex
+\usepackage[dvipdfmx]{hyperref}\usepackage{pxjahyper}% for (u)platex
+%\usepackage{graphicx}% for LuaLaTeX
+%\usepackage[luatex,pdfencoding=auto]{hyperref}% for LuaLaTeX
+\hypersetup{%
+ setpagesize=false,
+ colorlinks=true,
+ %colorlinks=false,
+ urlcolor=blue,
+ citecolor=black,
+ linkcolor=black,
+}
+
+\setcounter{page}{1}
+
+\def\ClassFile{\texttt{ieej.cls}}
+\def\PS{{\scshape Post\-Script}}
+\def\AmSLaTeX{\leavevmode\hbox{$\cal A\kern-.2em\lower.376ex
+ \hbox{$\cal M$}\kern-.2em\cal S$-\LaTeX}}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+ T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\FIELD{A}
+\YEAR{2022}
+\NO{1}
+\jtitle[電気学会論文誌\LaTeXe{} クラスファイルの使い方]
+       {電気学会論文誌\LaTeXe{} クラスファイル\\
+        \ClassFile の使い方}
+\etitle{How to Use the \LaTeXe{} Class File (\ClassFile)\\
+  for the Transactions of The Institute of Electrical Engineers of Japan}
+\makeatletter
+\if@english
+\makeatother
+ \authorlist{%
+  \authorentry[TaroDenshi@iee.or.jp]{Taro Denshi}{m}{TRL}
+  \authorentry{Hanako Denki}{n}{KEC}% [ABC]
+ }
+ \affiliate[TRL]
+  {Technical Research Labs., Shin-nichi Electric Co., Ltd.\\
+   7--2, Gobancho, Chiyoda-ku, Tokyo, Japan 102--0076}
+ \affiliate[KEC]
+  {Technical Labs., Kagoshima Electron Corp.\\
+   2--100, Daikan-cho, Kagoshima, Japan 890--0099}
+\else
+ \authorlist{%
+  \authorentry[TaroDenshi@iee.or.jp]{電子 太郎}{Taro Denshi}{m}{TRL}
+  \authorentry{電気 花子}{Hanako Denki}{n}{KEC}
+ }
+ \affiliate[TRL]
+  {新日電機（株）技術研究所\\ 〒102--0076\hskip1\zw 東京都千代田区五番町7--2}
+  {Technical Research Labs., Shin-nichi Electric Co., Ltd.\\
+   7--2, Gobancho, Chiyoda-ku, Tokyo, Japan 102--0076}
+ \affiliate[KEC]
+  {鹿児島電子（株）技術研究所\\ 〒890--0099\hskip1\zw 鹿児島市代官町2--100}
+  {Technical Labs., Kagoshima Electron Corp.\\
+   2--100, Daikan-cho, Kagoshima, Japan 890--0099}
+\fi
+
+\received{2021}{10}{11}
+\revised{2022}{4}{4}
+\NoteOnArticle{本論文は……を加筆修正したものである。}
+\NoteIntConf{本論文は2020年 国際会議〇〇〇〇で発表した論文（文献(1) \textcopyright 2020 IEEJ）を加筆修正したものである。}
+
+\begin{document}
+\begin{abstract}
+IEE Japan provides a \LaTeXe{} class file, named \ClassFile, 
+for the Transactions of The Institute of Electrical Engineers of Japan. 
+This document describes how to use the class file, 
+and also makes some remarks about typesetting a document by using \LaTeXe.
+The design is based on ASCII Japanese p\LaTeXe. 
+\end{abstract}
+\begin{jkeyword}
+クラスファイル，アスキー版日本語 p\LaTeXe
+\end{jkeyword}
+\begin{ekeyword}
+class file, ASCII Japanese p\LaTeXe
+\end{ekeyword}
+\maketitle
+
+\section{まえがき}\label{sec:intro}
+
+本ドキュメントは電気学会 \LaTeXe{} クラスファイルを
+使って論文を記述する際の注意事項をまとめたものです。
+\ref{template} 節で，このクラスファイルに従った記述方法を，
+\ref{generalnote} 節でクラスファイル全般に関する
+注意事項を，\ref{typesetting} 節で，原稿作成の際のタイピングの
+注意事項および数式が版面をはみ出す場合などの処理方法を，
+\ref{source} 節でソースファイルの提出にあたっての
+注意事項を説明します。
+
+原稿作成にあたっては，このクラスファイルと
+同時に配布される \texttt{template-(je).tex} を利用できます。
+
+%本誌の組版体裁に従って，各種パラメータおよび出力体裁を設定していますので，
+%レイアウトにかかわるパラメータは絶対に変更しないでください。
+
+\section{テンプレートならびに記述方法}\label{template}
+
+「論文」，「研究開発レター」，
+「英文論文」，「解説」のタイプ別によって，
+記述の仕方が若干異なります。
+
+「論文」タイプから順に説明します。
+
+\subsection{「論文」タイプの記述方法}
+
+\begin{verbatim}
+\documentclass[fleqn]{ieej}
+%\usepackage{graphicx}
+\usepackage[defaultsups]{newtxtext}
+\usepackage[varg]{newtxmath}
+\usepackage[superscript,nomove]{cite}
+
+\FIELD{A}
+\YEAR{2022}
+\NO{1}
+\jtitle{和文タイトル}
+%\jtitle[柱用タイトル]{和文タイトル}
+\etitle{英文タイトル}
+\authorlist{%
+ \authorentry{日本語名}{ローマ字名}
+  {会員種別}{ラベル}
+}
+%\Jauthoralign{3}
+\affiliate[ラベル]
+ {和文所属\\ 連絡先}
+ {英文所属\\ 連絡先}
+\received{2021}{10}{11}
+\revised{2022}{4}{4}
+\NoteOnArticle{本論文は……を加筆修正したものである。}
+\NoteIntConf{本論文は2020年 国際会議 ... }
+\begin{document}
+\begin{abstract}
+英文 Summary
+\end{abstract}
+\begin{jkeyword}
+和文キーワード
+\end{jkeyword}
+\begin{ekeyword}
+英文キーワード
+\end{ekeyword}
+\maketitle
+\section{まえがき}
+ ---- （略） ----
+\begin{thebibliography}{99}
+\bibitem{}
+\bibitem{}
+ ---- （略） ----
+\end{thebibliography}
+\appendix
+\section{}
+ ---- （略） ----
+\acknowledgment % 謝辞
+ ---- （略） ----
+\begin{biography}
+\profile{会員種別}{日本語名}{著者紹介}
+\end{biography}
+\end{document}
+\end{verbatim}
+
+\onelineskip
+
+以下，記述方法を説明します。
+
+\begin{itemize}
+\item
+欧文書体としてタイムス系の書体を使用します。
+\begin{verbatim}
+\usepackage[defaultsups]{newtxtext}
+\usepackage[varg]{newtxmath}
+\end{verbatim}
+
+\item
+\verb/\FIELD/ は掲載希望の部門誌の指定です。
+\verb/\FIELD/ の引き数として，\par\noindent
+「基礎・材料・共通部門誌」は \texttt{A} を，\par\noindent
+「電力・エネルギー部門誌」は \texttt{B} を，\par\noindent
+「電子・情報・システム部門誌」は \texttt{C} を，\par\noindent
+「産業応用部門誌」は \texttt{D} を，\par\noindent
+「センサ・マイクロマシン部門誌」は \texttt{E} を，\par\noindent
+それぞれ指定してください。
+
+\item
+\verb/\YEAR/ は \verb/\YEAR{2022}/ のように西暦を指定してください。
+
+\item
+\verb/\NO/ は \verb/\NO{1}/ のように月をアラビア数字で指定してください。
+
+\verb/\YEAR/，\verb/\NO/ については，投稿論文がいつ掲載されるか
+わからない場合は，引数を空にするかコマンドをコメントアウトしてください。
+
+\item
+\verb/\jtitle/ には，論文のタイトルを40字以内でタイプしてください。
+任意の場所で改行したい場合には，\verb/\\/ で改行してください。
+
+\verb/\jtitle/ の引き数は柱（ヘッダー）にも出力されます。
+柱用に17文字以内の短いタイトルを指定してください。
+\begin{verbatim}
+\jtitle[柱用タイトル]{タイトル}
+\end{verbatim}
+タイトルが長すぎて柱がはみ出す場合はワーニングが出力されます。
+
+\item
+\verb/\etitle/ には英文タイトルをタイプしてください。
+引き数を柱に出力しないため，
+\verb/\etitle[柱用タイトル]{タイトル}/ という使い方はできません。
+
+\item
+著者のリストを出力するには，以下のように記述してください。
+著者名，会員種別，所属などの出力体裁が自動的に整えられます。
+
+基本的なスタイルは
+\begin{verbatim}
+\authorlist{%
+ \authorentry{名前}{ローマ字名}
+  {会員種別}{ラベル}
+}
+\end{verbatim}
+という形です。例えば，次のように記述してください。
+\begin{verbatim*}
+\authorlist{%
+\authorentry{電子 太郎}{Taro Denshi}
+ {m}{TRL}
+\authorentry{電気 花子}{Hanako Denki}
+ {n}{KEC}
+}
+\end{verbatim*}
+
+著者のリストを \verb/\authorentry/ に記述し，
+リスト全体を \verb/\authorlist/ の引き数にします。
+
+\begin{itemize}
+\item
+第1引き数は著者の日本語名を指定します。
+{\bfseries 姓と名の間には必ず半角のスペースを挿入}してください
+（スペースを挿入し忘れた場合には，ワーニングが出力されます）。
+
+\item
+第2引き数は著者のローマ字名を指定します。
+スペルの最初の文字は大文字で記述してください。
+
+\item
+第3引き数は会員種別を表すアルファベットを記述します。
+
+第3引き数に指定できる文字は，
+\texttt{m}，\texttt{a}，\texttt{s}，\texttt{l}，
+\texttt{n}，\texttt{h}，\texttt{S}，\texttt{f} の
+うちのいずれか1つです。
+この場合，{\bfseries 引き数の前後に余分なスペースを入れないでください}。
+たとえば \verb*/{m }/ では会員種別は出力されません。
+
+\vskip.85\baselineskip
+
+\begin{center}
+\begin{small}
+\tabcolsep=.4\zw
+\begin{tabular}{lll}
+\hline
+\texttt{m}\,ember           & 正員     & Member\rule{0mm}{3.5mm}\\
+\texttt{a}\,ssociate member & 准員     & Associate Member\\
+\texttt{s}\,tudent member   & 学生員   & Student Member\\
+\texttt{l}\,ife member      & 終身会員 & Life Member\\
+\texttt{n}\,on-member       & 非会員   & Non-member\\
+\texttt{h}\,onorary member  & 名誉員   & Honorary Member\\
+\texttt{S}\,enior member    & 上級会員 & Senior Member\\
+\texttt{f}\,ellow           & フェロー & Fellow\\
+\hline
+\multicolumn{3}{l}{{\footnotesize\rule{0mm}{3.5mm}%
+  左欄は指定する文字，中・右欄は出力される会員種別}}
+\end{tabular}
+\end{small}
+\end{center}
+
+\vskip.85\baselineskip
+
+\item
+著者のメールアドレスを記述することもできます。
+以下のように記述します。
+\begin{verbatim*}
+\authorlist{%
+\authorentry[TaroDenshi@iee.or.jp]
+{電子 太郎}{Taro Denshi}{m}{TRL}
+\end{verbatim*}
+先頭ページ左下段に\hfil\break
+``a) Correspondence to: TaroDenshi@iee.or.jp'' と
+出力されます。
+
+\item
+著者が複数の場合，著者名は1行に2名ずつ出力されます
+（3名の場合は1行に3名）が，
+5名以上の場合，以下のようにすると
+1行に3名ずつ出力することもできます。
+\begin{verbatim}
+\Jauthoralign{3}
+\end{verbatim}
+指定できる数字は2と3のみです。
+
+\item
+和文論文の場合，
+英文で出力される著者名と会員種別の出力で，
+著者が多数の場合などに任意の場所で
+改行を行いたい場合は，
+\verb/\breakauthorline/ コマンドを使用してください。
+
+\verb/\breakauthorline{3}/ とすれば3人目の著者の後ろで改行します。
+引数には，カンマで区切って複数の数字を指定できます。
+
+\item
+第4引き数は著者の所属ラベルを指定します。
+後述する \verb/\affiliate/ コマンドの第1引き数に対応しています。
+ラベルは大学名，企業名，地名などを表す簡潔なものにしてください。
+この場合も，{\bfseries 引き数の前後に余分なスペースを入れないでください}。
+
+著者に所属がない場合は，\texttt{none} と記述してください。
+
+%\item
+%現在の所属を指定したい場合は，
+%第5引き数としてブラケットにラベルを指定します。
+%このラベルは，後述する \verb/\paffiliate/ の第1引き数に対応します。
+%
+%基本的なスタイルは%
+%\begin{verbatim}
+%\authorlist{%
+% \authorentry{名前}{ローマ字名}
+%  {会員種別}{ラベル}[現在の所属ラベル]
+%}
+%\end{verbatim}
+%という形です。
+\end{itemize}
+
+\verb/\authorentry/ には著者を何人でも指定することができます。
+
+\item
+著者の所属は \verb/\affiliate/ に指定します。
+基本的なスタイルは
+\begin{verbatim}
+\affiliate[ラベル]
+ {和文所属\\ 連絡先}
+ {英文所属\\ 連絡先}
+\end{verbatim}
+という形です。
+
+第1引き数に \verb/\authorentry/ で指定したラベルに対応するラベルを指定します。
+第2引き数に和文の所属と連絡先を，
+第3引き数に英文所属と連絡先を指定してください。
+この場合も，ラベルの前後に余分なスペースを挿入しないでください。
+\verb/\authorentry/ に記述したラベルの出現順に記述するようにしてください。
+
+%\item
+%現在の所属は \verb/\paffiliate/ に指定します。
+%基本的なスタイルは
+%\begin{verbatim}
+%\paffiliate[ラベル]
+% {和文所属\\ 連絡先}
+% {英文所属\\ 連絡先}
+%\end{verbatim}
+%という形です。
+%第1引き数に \verb/\authorentry/ の第5引き数でブラケットに指定した
+%ラベルを記述します。
+
+\item
+\verb/affiliate/ のラベルが，\verb/\authorentry/ で指定した
+ラベルと対応しないときは，ワーニングメッセージが端末に出力されます。
+
+\item
+\verb/\received/，\verb/\revised/ には，
+受付，再受付の日付をタイプしてください。それぞれ3つの引き数をとり，
+前から順に年（西暦），月，日の数字をタイプします。
+次のように記述すれば
+\begin{verbatim}
+\received{2021}{10}{11}
+\revised{2022}{4}{4}
+\end{verbatim}
+英文著者名の下に出力されます。
+日付が不明な場合は，コメントアウトしてください。
+
+\item
+\verb/\NoteOnArticle/ は，論文が既発表であることなどを記述します。
+
+\item
+\verb/\NoteIntConf/ は，国際会議予稿集・プロシーディング等
+（電気学会主催・共催）で発表し，著作権を電気学会に譲渡している論文を
+電気学会論文誌に投稿する場合に使用するコマンドです。
+
+\item
+英文 Summary は \texttt{abstract} 環境に，
+150〜200 words 以内で，
+和文キーワードと英文キーワードは
+それぞれ \texttt{jkeyword} 環境と \texttt{ekeyword} 環境に，
+6つ以内で記述してください。
+
+\item
+これらのコマンドを指定した後，
+\verb/\maketitle/ を置いてください。
+
+\item
+\verb/\appendix/ は，\LaTeXe{} 標準のスタイルではセクション番号を
+アルファベットにして，カウンターをリセットしますが，
+このクラスファイルでは，``付録'' という見出しを出力します。
+
+数式番号は ``(付1)'' となります。
+図表のキャプションは，図の場合，
+%``付図{\sffamily 1}''，
+``app.\ Fig.\,1'' と出力されます。
+
+\item
+\verb/\acknowledgment/ コマンドは，
+謝辞を記述する場合に使用してください。
+
+\item
+著者紹介を出力するには，\texttt{biography} 環境の
+中で \verb/\profile/ コマンドを使用してください。
+\begin{verbatim*}
+\profile{m}{電子 太郎}{19xx年生。
+19xx年xx月XX大学工学部電気科卒業。
+ ---- （略） ----
+}
+\end{verbatim*}
+第1引き数には会員種別を，
+第2引き数には名前を，
+第3引き数には略歴を，
+それぞれタイプしてください。
+
+写真を省略する場合には，\verb/\profile*/ コマンドを使用してください。
+
+\begin{itemize}
+\item
+第1引き数は，\verb/\authorentry/ の第3引き数と同じように，
+会員種別を表す \texttt{m}，\texttt{a}，\texttt{s}，\texttt{l}，
+\texttt{n}，\texttt{h}，\texttt{S}，\texttt{f} のうちの
+いずれか1つを指定します。
+
+\item
+第2引き数の名前は，姓と名の間に半角スペースを必ず入れてください。
+
+\item
+著者の顔写真を表示する場合は，
+$横 : 縦 = 22 : 28$ の PDF ファイルなどを用意し，
+著者の出現順に，ファイル名を a1.pdf, a2.pdf, ... として，
+カレントディレクトリに置きます。
+これらのファイルがカレントディレクトリにあれば，コンパイル時に
+自動的に読み込みます。
+
+PDF の取り込みは，以下のコマンド
+\begin{verbatim}
+\resizebox{22mm}{28mm}
+ {\includegraphics{a1.pdf}}
+\end{verbatim}
+で行っています。
+
+jpg などの画像を使いたい場合は，以下のような定義をすれば
+（拡張子の名前を指定），取り込むことができます。
+\begin{verbatim}
+\makeatletter
+\def\ieej@in@ext{jpg}
+\makeatother
+\end{verbatim}
+取り込まれるファイルは \texttt{a1.jpg} となります。
+
+カレントディレクトリに a1.pdf などのファイルが用意されていない場合は，
+四角のフレームとなります。
+\end{itemize}
+
+\end{itemize}
+
+\subsection{「英文論文」タイプの記述方法}
+
+ドキュメントクラスのオプションとして \texttt{english} を指定してください。
+「論文」タイプの記述方法と異なるのは，\par\noindent
+\verb/\title/\par\noindent
+\verb/\authorentry/\par\noindent
+\verb/\affiliate/\par\noindent
+\texttt{keyword}\par
+%\noindent
+%\verb/\caption/（\ref{caption} 節参照）\par
+\noindent
+です。
+\begin{verbatim}
+\documentclass[english,fleqn]{ieej}
+ ---- （略） ----
+\title[柱用和文タイトル]{英文タイトル}
+\authorlist{%
+ \authorentry{ローマ字名}{会員種別}{ラベル}
+}
+\affiliate[ラベル]{英文所属\\ 連絡先}
+\end{verbatim}
+
+\onelineskip
+
+\begin{itemize}
+\item
+タイトルは \verb/\title/ コマンドを使います。
+この場合，柱は和文にする必要があるので，必ず
+\begin{verbatim}
+\title[柱用和文タイトル]{英文タイトル}
+\end{verbatim}
+と記述してください。
+
+\item
+著者リストの記述は，和文の名前を出力する必要がないため
+引き数が3つになります。
+\begin{verbatim}
+\authorlist{%
+ \authorentry{ローマ字名}{会員種別}
+  {ラベル}
+}
+\end{verbatim}
+例えば，次のように記述します%
+\footnote{英文論文では，著者名は1行に2名記述するのが基本ですが，
+1行に1名ずつ並べることも可能です。
+プリアンプルで\hfil\break
+\texttt{\symbol{"5C%"
+}def\symbol{"5C%"
+}Eauthoralign\protect\string{1\protect\string}}\hfil\break
+と記述してください。}\label{fnsample}。
+\begin{verbatim}
+\authorlist{%
+\authorentry{Taro Denshi}{m}{TRL}
+\authorentry{Hanako Denki}{n}{KEC}
+}
+\end{verbatim}
+
+著者のメールアドレスを記述することもできます。
+\begin{verbatim}
+\authorlist{%
+\authorentry[TaroDenshi@iee.or.jp]
+{Taro Denshi}{m}{TRL}
+\end{verbatim}
+
+\item
+著者の所属の記述も，和文所属を出力する必要がないため
+引き数が2つになります。
+\begin{verbatim}
+\affiliate[ラベル]{英文所属\\ 連絡先}
+\end{verbatim}
+
+\item
+キーワードは，\texttt{keyword} 環境に記述します。
+\end{itemize}
+
+\subsection{「研究開発レター」タイプの記述方法}
+
+ドキュメントクラスのオプションとして \texttt{letter} を指定してください。
+その他は「論文」タイプと同じです。
+\begin{verbatim}
+\documentclass[letter,fleqn]{ieej}
+英文は
+\documentclass[english,letter,fleqn]{ieej}
+\end{verbatim}
+
+英文 Summary は 100 words 程度でつけることができます。
+また，著者紹介を省略することもできます。
+
+\subsection{「解説」および「特集解説」タイプの記述方法}
+
+「解説」および「特集解説」は，
+ドキュメントクラスのオプションとして，それぞれ \texttt{comment}，
+\texttt{feature} を指定してください。
+
+%「解説」および「特集解説」タイプの場合には，
+%柱に ``解説''，``特集解説'' と出力されるため，
+%「論文」タイプのように \verb/\jtitle[柱用タイトル]{タイトル}/ と
+%記述する必要はありません。
+
+% サブタイトルが必要な場合は，\verb/\jsubtitle/ コマンドを利用してください。
+
+\section{クラスファイルに関する注意}\label{generalnote}
+
+\subsection{セクションの字どり}
+
+章および節見出しは，3字以下の場合，
+4字どりになるように設定しています（\ref{sec:intro}章参照）。
+
+\subsection{数式について}
+
+本誌のディスプレー数式は，数式と数式番号をドットでつなぐため，
+\texttt{dotseqn.sty} を組み込んでいます。
+
+数式の頭は左端から2字下げのところに，数式番号は右端から1字入ったところに
+出力されます。この設定を前提に数式の折り返しを調整してください。
+
+たとえば，
+\begin{verbatim}
+\begin{eqnarray}
+\lefteqn{ \iint_S 
+ \left(\frac{\partial V}{\partial x}
+ -\frac{\partial U}{\partial y}\right)
+ dxdy} \quad\nonumber\\
+ &=& \oint_C \left(U \frac{dx}{ds}
+      + V \frac{dy}{ds} \right)ds
+\end{eqnarray}%
+\end{verbatim}
+と記述すれば，
+\begin{eqnarray}
+\lefteqn{ \iint_S 
+ \left(\frac{\partial V}{\partial x}
+ -\frac{\partial U}{\partial y}\right)
+ dxdy} \quad\nonumber\\
+ &=& \oint_C \left(U \frac{dx}{ds}
+      + V \frac{dy}{ds} \right)ds
+\end{eqnarray}%
+と出力されます。
+
+本誌の場合，2段組みで1段の左右幅がせまいため，数式と数式番号が重なったり，
+数式がはみ出したりすることが頻繁に生じると思われるので，\allowbreak
+\verb/Overfull \hbox/ {\bfseries のメッセージには特に気をつけてください}
+（\ref{longformula} 節参照）。
+
+\subsection{AMS パッケージについて}
+
+\texttt{newtxmath} パッケージは内部で \texttt{amsmath} をロードしますが，
+多くのディスプレー数式の環境（%\texttt{equation}, 
+\texttt{align}, \texttt{gather}, \texttt{multiline}, 
+\texttt{split} 環境など）で，
+数式と数式番号の間を自動的にドットでつなぐことができません。
+原始的な方法ですが，数式番号との間をドットでつなぐべき数式の最後に，
+例えば以下のような記述をすることができます。
+\begin{verbatim}
+\rlap{\hbox to 10mm{\ \EqnDots}} 
+\end{verbatim}
+これによって，幅が 0mm の箱の中に，10\,mm 幅のドットを
+数式の末尾より右側にはみ出させることができます。
+
+\subsection{図表について}
+
+キャプションを含め
+図表中の文字はすべて英文で記述し，本文中で参照する場合は，
+``Fig.1''，``Table~1'' などとします。
+
+\texttt{figure} および \texttt{table} 環境の内部は，
+\verb/\footnotesize/（7\,pt）で組まれるように設定してあります。
+
+番号つきの図表の出力位置を指定する場合，
+オプションとして \texttt{[h]} は使わず，
+\texttt{[tb]} などとして，版面の天か地に置くようにしてください。
+
+\subsubsection{図の取り込み}
+
+図は基本的にPDF形式のファイルを読み込むようにして下さい。
+最近はPDFを読み込むことが推奨されています。
+
+適当なアプリケーションで図を作成し保存形式をPDFにします。
+
+PDFファイルはファイルの内部にBoundingBoxの情報を持っていませんので
+\begin{verbatim}
+\includegraphics[bb=0 0 横ポイント数 縦ポイント数,width=幅]{file.pdf}
+\end{verbatim}
+などと明示的にBoundingBoxの値を記述するか，
+ターミナルで以下のように \texttt{extractbb} を実行し
+\begin{verbatim}
+extractbb file.pdf
+\end{verbatim}
+生成された \texttt{file.xbb} というファイルから，
+コンパイル時にBoundingBoxの情報を得る方法がありましたが，
+TeX Live 2015以降，MacTeX-2015以降，W32TeXでは，コンパイル時に自動的に
+\texttt{extractbb} を実行してBoundingBoxの情報を取得できるようになりました。
+しかし，\texttt{xbb} ファイルを生成しておいたほうがコンパイルの速度は
+速くなります。この場合は，図を修正したときにその都度 \texttt{extractbb} を
+実行する必要があります。
+
+詳しくは以下のURLを参照されることを勧めます。
+
+\noindent
+\href{https://texwiki.texjp.org/}{https://texwiki.texjp.org/}
+
+なお，PDFではなく\PS 形式（EPS）の図を読み込みたいときには，
+\begin{verbatim}
+\usepackage[dvips]{graphicx}
+\end{verbatim}
+と指定して下さい。
+
+取り込み方を簡単に説明します。まずパッケージとして
+\begin{verbatim}
+\usepackage[dvipdfmx]{graphicx}
+\end{verbatim}
+などと指定し，
+\begin{verbatim}
+\begin{figure}[tb]
+\begin{center}
+\includegraphics{file.pdf}
+\end{center}
+\caption{...}
+\label{fig:1}
+\end{figure}
+\end{verbatim}
+のように記述します。
+\begin{verbatim}
+\includegraphics[scale=0.5]{file.pdf}
+\end{verbatim}
+とすれば，図を 0.5 倍にスケーリングします。
+同じことを \verb/\scalebox/ を使って，
+次のように指定することもできます。
+\begin{verbatim}
+\scalebox{0.5}{\includegraphics{file.pdf}}
+\end{verbatim}
+
+また，幅 30\,mm にしたい場合は，
+\begin{verbatim}
+\includegraphics[width=30mm]{file.pdf}
+\end{verbatim}
+とします。同じことを \verb/\resizebox/ を使って
+次のように指定することができます。
+\begin{verbatim}
+\resizebox{30mm}{!}
+ {\includegraphics{file.pdf}}
+\end{verbatim}
+
+高さと幅の両方を指定する場合は
+\begin{verbatim}
+\includegraphics[width=30mm,height=40mm]
+ {file.pdf}
+\end{verbatim}
+または
+\begin{verbatim}
+\resizebox{30mm}{40mm}
+ {\includegraphics{file.pdf}}
+\end{verbatim}
+です。
+
+他にもさまざまな利用方法がありますから，
+詳しくは文献\citen{Nakano,FMi2,GS}などをご覧下さい。
+
+\subsubsection{キャプション}
+\label{caption}
+
+キャプションも英文で記述します。
+
+\begin{figure}[t]% fig.1
+\setbox0\vbox{%
+\hbox{\verb/\begin{figure}[tb]/}
+\hbox{\verb/\begin{center}/}
+\hbox{\verb/... 図の要素 .../}
+\hbox{\verb/\end{center}/}
+\hbox{\verb/%\capwidth=50mm/}
+\hbox{\verb/\caption{An example of caption/}
+\hbox{\verb/in English.}/}
+\hbox{\verb/\label{fig:1}/}
+\hbox{\verb/\end{figure}/}
+}
+\begin{center}
+\fbox{\box0}
+\end{center}
+\caption{An example of caption in English.}
+\label{fig:1}
+\end{figure}
+
+キャプションの幅は，1段の図の場合は 72\,mm に，
+2段ぬきの図の場合はテキストの幅の 0.8 倍に設定しています。
+ただし，任意の幅でキャプションを折り返したい場合は，
+\texttt{float} 環境中で \verb/\capwidth/ に
+数値を指定します（Fig.~\ref{fig:1} 参照），
+
+\begin{table}[t]% Table 1
+%\vskip-.5\Cvs %%!!
+\caption{An example of table caption in English.}
+\label{table:1}
+\setbox0\vbox{%
+\hbox{\verb/\begin{table}[tb]/}
+\hbox{\verb/\caption{An example of table caption in English.}/}
+\hbox{\verb/\label{table:1}/}
+\hbox{\verb/\begin{center}/}
+\hbox{\verb/\begin{tabular}{c|c|c}/}
+\hbox{\verb/\hline/}
+\hbox{\verb/A & B & C\\/}
+\hbox{\verb/\hline/}
+\hbox{\verb/X & Y & Z\\/}
+\hbox{\verb/\hline/}
+\hbox{\verb/\end{tabular}/}
+\hbox{\verb/\end{center}/}
+\hbox{\verb/\end{table}/}
+}
+\begin{center}
+\begin{tabular}{c|c|c}
+\hline
+A & B & C\\
+\hline
+X & Y & Z\\
+\hline
+\end{tabular}
+\halflineskip
+\fbox{\box0}
+\end{center}
+%\vskip-.5\Cvs %%!!
+\end{table}
+
+\subsection{文献の引用と \texttt{thebibliography} 環境}
+
+\begin{itemize}
+\item
+\BibTeX{} 用の \texttt{bst} スタイルファイルは，
+\pagebreak[2]%
+非公式ですが利用できるようです。以下のURLからたどることができます。
+
+\noindent
+\href{https://github.com/ehki/jIEEEtran}{https://github.com/ehki/jIEEEtran}
+
+\item
+文献引用に際しては \texttt{cite.sty} を利用します。
+\begin{verbatim}
+\usepackage[superscript,nomove]{cite}
+\end{verbatim}
+
+例えば，
+\verb/\cite{/\allowbreak
+\texttt{Bech,\allowbreak
+Gr,\allowbreak
+tex,\allowbreak
+ohno,\allowbreak
+nodera1,\allowbreak
+PA,\allowbreak
+Seroul,\allowbreak
+itou}\allowbreak
+\verb/}/ と記述すれば，
+番号が続く場合は省略し，番号順に並べ変えます%
+\cite{Bech,Gr,tex,ohno,nodera1,Seroul,PA,itou}。
+
+本文中で ``文献 \citen{tex} を参照'' のように，肩付きではない
+文献番号を出す場合は，
+「文献 \verb/\citen{tex}/ を参照」と記述できます。
+
+\texttt{thebibliography} 環境については，
+著者名，文献名，ジャーナル（出版社），発行年など，イニシャル，
+略語のスタイル，順番などは本誌の規則に従ってください。
+\end{itemize}
+
+\subsection{hyperrefについて}
+\label{sec:hyperref}
+
+\begin{itemize}
+\item
+\texttt{hyperref} を使用するときは，
+\texttt{PXjahyper} パッケージを併用することを勧めます
+（以下は \texttt{(u)platex} を使う場合）。
+\begin{verbatim}
+\usepackage[dvipdfmx]{graphicx}
+\usepackage[dvipdfmx]{hyperref}
+\usepackage{pxjahyper}
+\end{verbatim}
+
+このパッケージが使えないときは，
+\texttt{hyperref}オプションに\texttt{setpagesize=false}を
+指定することを勧めます（はみ出しを避けるため改行しています）。
+\begin{verbatim}
+\usepackage[dvipdfmx,setpagesize=false]
+ {hyperref}
+\end{verbatim}
+
+\item
+英文論文で \texttt{pdflatex} を利用したり，
+Lua\LaTeX\ を利用される場合は，
+それぞれ以下のように指定するのが安全です。
+\begin{verbatim}
+\usepackage{graphicx}
+\usepackage[pdfencoding=auto]{hyperref}
+\end{verbatim}
+または
+\begin{verbatim}
+\usepackage{graphicx}
+\usepackage[luatex,pdfencoding=auto]
+ {hyperref}
+\end{verbatim}
+
+\item
+他のパッケージとの併用で生じる不具合などについては，
+以下のURLを参照するなどしてください。
+
+\noindent
+\href{https://texwiki.texjp.org/?hyperref#v71488f4}{https://texwiki.texjp.org/?hyperref\#v71488f4}
+%\def\verbatimsize{\small}
+%\begin{verbatim}
+%https://texwiki.texjp.org/?hyperref#v71488f4
+%\end{verbatim}
+\end{itemize}
+
+\subsection{定理，定義などの環境}
+
+定理，定義，命題などの定理型環境は \verb/\newtheorem/ を
+利用することができますが\cite{latex,FMi1}，
+本誌の体裁に従って，環境の上下の空き，インデントを変更し，
+見出しはゴシックにせず，環境中の英文もイタリックにならないように
+設定しています。
+
+たとえば，
+\begin{verbatim}
+\newtheorem{teiri}{定理}
+\begin{teiri}[フェルマーの最終定理]
+$n>2$ に対しては，
+方程式 $x^n + y^n = z^n$ の
+自然数解は存在しない
+（Fermat's last theorem）。
+\end{teiri}
+\end{verbatim}
+と記述すれば，
+\newtheorem{teiri}{定理}
+\begin{teiri}[フェルマーの最終定理]
+$n>2$ に対しては，
+方程式 $x^n + y^n = z^n$ の
+自然数解は存在しない
+（Fermat's last theorem）。
+\end{teiri}
+\noindent
+と出力されます。
+
+\subsection{脚注について}
+
+脚注マークは，カウンターが進むごとに「$^{\dagger}$，$^{\dagger\dagger}$，
+$^{\dagger\dagger\dagger}$」となります（\pageref{fnsample} ページ参照）。
+新しいページになっても，カウンターは進まずリセットされます。
+
+\subsection{\texttt{\symbol{"5C%"
+               }flushbottom} について}
+
+クラスファイルでは \verb/\flushbottom/ を指定してあります。
+したがって，本文領域の左右2段の下が揃います。
+
+\subsection{verbatim 環境}
+
+verbatim 環境のレフトマージン，行間，サイズを
+変更することができます\cite{Okumura}。デフォルトは
+\begin{verbatim}
+\verbatimleftmargin=0pt
+ % レフトマージンは 0pt 
+\def\verbatimsize{\normalsize}
+ % フォントサイズ
+\verbatimbaselineskip=\baselineskip
+ % 本文と同じ行間
+\end{verbatim}
+ですが，それぞれパラメータやサイズ指定を変更することができます。
+\begin{verbatim}
+\verbatimleftmargin=2zw
+% --> レフトマージンを2字下げに変更
+\def\verbatimsize{\footnotesize}
+% --> サイズを \footnotesize に変更
+\verbatimbaselineskip=3mm
+% --> 行間を 3mm に変更
+\end{verbatim}
+
+\subsection{\ClassFile{}で定義しているマクロ}\label{sec:macros}
+
+\begin{itemize}
+\item
+「証明終」を意味する記号 $\Box$ を出力するマクロとして
+\verb/\QED/ を定義してあります\cite{tex}。
+\verb/\hfill$\Box$/ では，この記号の直前の文字が行末に来る場合，
+記号が行頭に来てしまいますので，\verb/\QED/ を使ってください。
+
+\item
+\verb/\onelineskip/，\verb/\halflineskip/ という行間スペースを
+定義しています。
+その名の通り，1行空け，半行空けに使ってください。和文の組版の場合は，
+こうした単位の空け方が好まれます。
+
+\item
+このクラスファイルではTable~\ref{table:2} のように，
+\verb/\RN/\cite{tex,Bech}と
+\verb/\FRAC/\cite{tex,Okumura}というマクロを定義しています。
+
+\begin{table}[b]% Table 2
+\caption{\texttt{\symbol{"5C% "
+}}\texttt{FRAC} and \texttt{\symbol{"5C% "
+}}\texttt{RN}}
+\label{table:2}
+\begin{center}
+\begin{tabular}{c|c}
+\noalign{\hrule height 0.4mm}
+\verb/\RN{2}/ & \RN{2} \\
+\verb/\RN{117}/ & \RN{117} \\
+\hline
+\verb/\FRAC{$\pi$}{2}/ & \FRAC{$\pi$}{2}\\
+\verb/\FRAC{1}{4}/ & \FRAC{1}{4} \\
+\noalign{\hrule height 0.4mm}
+\end{tabular}
+\end{center}
+\end{table}
+
+\item
+2倍ダッシュの ``\ddash '' は，
+\verb/\ddash/ というマクロを使ってください。
+---（\texttt{---}）を2つ重ねると，
+---と---の間に若干のスペースが入ることがあり
+見苦しいからです。
+\item
+このほかに，
+\verb/\MARU/，\verb/\kintou/，\verb/\ruby/\cite{Okumura} を
+組み込んでいます。使い方については参考文献をご覧下さい。
+\end{itemize}
+
+\section{タイピングの注意事項}\label{typesetting}
+
+\subsection{美しい組版のために}
+
+\begin{enumerate}
+\item
+和文の句読点は，
+``\makebox[1\zw][l]{，}'' ``\makebox[1\zw][l]{。}''%
+（全角記号）を使用してください。
+和文中では，英文用のカンマ ``,''（半角）は使わないでください。
+
+\item
+括弧類は，和文中で英文を括弧でくくる場合は全角の括弧を使用してください。
+英文中ではすべて半角ものを使用してください。
+
+\noindent
+例：クラス（Class）ファイル / some (Class) files
+
+上の例にように括弧のベースラインが異なります。
+
+\item
+ハイフン（\texttt{-}），二分ダッシュ（\texttt{--}），
+全角ダッシュ（\texttt{---}）の
+区別をしてください。ハイフンは，well-knownなど一般的な欧語の連結に，
+二分ダッシュは，電話番号やpp.298--301のように範囲を示すときに使用してください。
+全角ダッシュは，英文用のem-dash（---）で，次のような場合に使用してください。
+
+The em-dash is even longer---it's used as punctuation, as in this sense, 
+and you get it by typing \texttt{---}.\cite{Seroul}
+
+\item
+全角ダッシュよりも長い2倍ダッシュ ``\ddash '' については，
+\ref{sec:macros} 節を参照してください。
+
+\item
+アラインメント以外の場所で，空行を広くとるため，\verb/\\/ による
+強制改行を乱用するのはよくありません。
+
+空行の直前に \verb/\\/ を入れたり，
+\verb/\\/ を2つ重ねれば，確かに縦方向のスペースが広がりますが，\par\noindent
+\verb/Underfull \hbox  (badness 10000) .... /\par\noindent
+というメッセージがたくさん出力されてしまい，重要なメッセージを
+見落としがちになってしまいます\cite{jiyuu}。
+\verb/\par\noindent/，\verb/\hfil\break/，\ref{sec:macros} 節のような
+使い方をしてください。
+
+\item
+\verb*/（ word ）/ のように ``（ ）'' 内や ``( )'' 内の単語の前後に
+スペースを入れないでください。
+
+% \item
+% 本誌は，アスキー版日本語\TeX{}でコンパイルして最終版下を作成するため，
+% ギリシア文字の $\alpha$，$\beta$ などについては，その前後に
+% ``，'' ``。'' ``（'' ``）''（全角JIS記号）がくる場合を除いて
+% 半角のスペースを入れるように心掛けてください。
+%
+% \leavevmode\phantom{$\Rightarrow$}
+% \verb*/ギリシア文字の$\alpha$，$\beta$については/\par
+% $\Rightarrow$ ギリシア文字の$\alpha$，$\beta$については\par
+% （アスキー版日本語\TeX{}を使ってコンパイルする場合，
+% スペースを入れないとギリシア文字と全角文字の間がつまりぎみになります）\par
+% \leavevmode\phantom{$\Rightarrow$}
+% \verb*/ギリシア文字の $\alpha$，$\beta$ については/\par
+% $\Rightarrow$ ギリシア文字の $\alpha$，$\beta$ については
+
+\item
+プログラムリストなど，インデントが重要なものは，
+力わざ（\verb/\hspace*{??mm}/ の使用や \verb/\\/ などによる強制改行）で
+整形するのではなく，\texttt{list} 環境や \texttt{tabbing} 環境などを
+使ったほうがのちの修正が楽です。
+
+\item
+数式モードの中でのハイフン，二分ダッシュ，マイナスの区別をしてください。
+例えば，
+\begin{verbatim}
+$A^{\mathrm{b}\mbox{-}\mathrm{c}}$
+\end{verbatim}
+$A^{\mathrm{b}\mbox{-}\mathrm{c}}$ $\Rightarrow$ ハイフン
+\begin{verbatim}
+$A^{\mathrm{b}\mbox{--}\mathrm{c}}$
+\end{verbatim}
+$A^{\mathrm{b}\mbox{--}\mathrm{c}}$ $\Rightarrow$ 二分ダッシュ
+\begin{verbatim}
+$A^{b-c}$
+\end{verbatim}
+$A^{b-c}$ $\Rightarrow$ マイナス\par
+\noindent
+となります。それぞれの違いを確認してください。
+
+\item
+数式の中で，\verb/<,>/ を括弧のように使用することがよくみられますが，
+数式中ではこの記号は不等号記号として扱われ，その前後にスペースが入ります。
+このような形の記号を括弧として使いたいときは，
+\verb/\langle,\rangle/（$\langle$，$\rangle$）を使うようにしてください。
+
+\item
+複数行の数式でアラインメントをするときに
+数式が $+$ または $-$ で始まる場合，$+$ や $-$ は単項演算子と
+みなされます（つまり，$+x$ と $x+y$ の $+$ の前後のスペースは
+変わります）。したがって，複数行の数式で $+$ や $-$ が先頭にくる場合は，
+それらが2項演算子であることを示す必要があります\cite{latex}。
+\begin{verbatim}
+\begin{eqnarray}
+y &=& a + b + c + ... + e\\
+  & & \mbox{} + f + ... 
+\end{eqnarray}
+\end{verbatim}
+
+\item
+\TeX{}は，段落中の数式の中（\verb/$...$/）では改行を
+うまくやってくれないことがあるので，
+その場合には \verb/\allowbreak/ を使用することを
+勧めます\cite{PA}。
+\end{enumerate}
+
+\subsection{長い数式の処理}\label{longformula}
+
+数式と数式番号が重なったり数式がはみ出したりする場合の
+対処策を，いくつか挙げます。
+
+\halflineskip
+\hfuzz10pt
+
+\noindent
+{\bfseries 例1}\hskip1\zw \verb/\!/ で縮める
+\begin{equation}
+ y=a+b+c+d+e+f+g+h+i+j+k+l+m+n+o
+\end{equation}
+\hskip1\zw
+数式と数式番号が重なったり，数式番号が右に押しやられたり，
+かなり接近する場合には，まず，
+2項演算記号や関係記号の前後を，
+\verb/\!/ ではさんで縮める方法があります。
+\begin{verbatim}
+\begin{equation}
+ y\!=\!a\!+\!b\!+\!c\!+\! ... \!+\!o
+\end{equation}
+\end{verbatim}
+\begin{equation}
+ y\!=\!a\!+\!b\!+\!c\!+\!d\!+\!e\!+\!f
+     \!+\!g\!+\!h\!+\!i\!+\!j\!+\!k\!+\!l\!+\!m\!+\!n\!+\!o
+\end{equation}
+
+縮めてもなお重なったりはみ出してしまう場合は，
+
+\halflineskip
+
+\noindent
+{\bfseries 例2}\hskip1\zw \texttt{equation} に代えて \texttt{eqnarray} を使う
+\begin{verbatim}
+\begin{eqnarray}
+ y &=& a+b+c+d+e+f+g+h\nonumber\\
+   & & \mbox{}+i+j+k+l+m+n+o
+\end{eqnarray}
+\end{verbatim}
+のように，途中で折り返せば，
+\begin{eqnarray}
+ y &=& a+b+c+d+e+f+g+h\nonumber\\
+   & & \mbox{}+i+j+k+l+m+n+o
+\end{eqnarray}
+のようになります。
+
+\halflineskip
+
+\noindent
+{\bfseries 例3}\hskip1\zw 数式を途中で切りたくない場合，
+\verb/\mathindent/ を変更する%
+\footnote{これは左寄せの数式の場合です。
+一般のセンタリングの数式には当てはまりません。}。
+\begin{verbatim}
+\mathindent=0zw % <-- [1]
+\begin{equation}
+ y=a+b+c+d+e+f+g+h+i+j+k+l+m+n+o
+\end{equation}
+\mathindent=2zw % <-- [2] デフォルト
+\end{verbatim}
+と記述すれば（\texttt{[1]}），
+\mathindent=0\zw
+\begin{equation}
+ y=a+b+c+d+e+f+g+h+i+j+k+l+m+n+o
+\end{equation}
+\mathindent=2\zw
+となって，数式の頭が左端にきます。
+この場合，その数式の後で \verb/\mathindent/ というパラメータを
+元に戻すことを忘れないでください（\texttt{[2]}）。
+
+\halflineskip
+
+\noindent
+{\bfseries 例4}\hskip1\zw \verb/\lefteqn/ を使う。
+\begin{equation}
+ \iint_S \left( \frac{\partial V}{\partial x}
+ - \frac{\partial U}{\partial y} \right)dxdy=
+ \oint_C \left(U\frac{dx}{ds}+V\frac{dy}{ds}\right)ds
+ \hskip-3.5mm %% --> oppress `Overful \hbox ...' message 
+\end{equation}
+\hskip1\zw
+このように，関係演算子（$=$）までが長くて，数式がはみ出したり，
+数式と数式番号が重なる場合には
+\begin{verbatim}
+\begin{eqnarray}
+ \lefteqn{
+  \iint_S 
+  \left(\frac{\partial V}{\partial x}
+  -\frac{\partial U}{\partial y}\right) dxdy
+ }\quad \nonumber\\
+ &=& \oint_C \left(U \frac{dx}{ds}
+      + V \frac{dy}{ds} \right)ds
+\end{eqnarray}
+\end{verbatim}
+のように \verb/\lefteqn/ を使えば，
+\begin{eqnarray}
+\lefteqn{ \iint_S 
+ \left(\frac{\partial V}{\partial x}
+ -\frac{\partial U}{\partial y}\right)
+ dxdy} \quad\nonumber\\
+ &=& \oint_C \left(U \frac{dx}{ds}
+      + V \frac{dy}{ds} \right)ds
+\end{eqnarray}
+となります。
+
+\halflineskip
+
+\noindent
+{\bfseries 例5}\hskip1\zw \texttt{array} 環境では，
+\verb/\arraycolsep/ の値を変えたり，\texttt{@} 表現を使う。
+\begin{equation}
+A = \left(
+  \begin{array}{cccc}
+   a_{11} & a_{12} & \ldots & a_{1n} \\
+   a_{21} & a_{22} & \ldots & a_{2n} \\
+   \vdots & \vdots & \ddots & \vdots \\
+   a_{m1} & a_{m2} & \ldots & a_{mn} \\
+  \end{array}
+    \right) \label{eq:ex1}
+\end{equation}
+\hskip1\zw
+\texttt{\&} で区切られた各要素の間や括弧との間隔を縮めます。
+\begin{verbatim}
+\begin{equation}
+\arraycolsep=3pt %     <--- [1]
+A = \left(
+  \begin{array}{@{\hskip2pt}cccc
+                @{\hskip2pt}}
+%                   ↑ [2] 
+   a_{11} & a_{12} & \ldots & a_{1n} \\
+   a_{21} & a_{22} & \ldots & a_{2n} \\
+   \vdots & \vdots & \ddots & \vdots \\
+   a_{m1} & a_{m2} & \ldots & a_{mn} \\
+  \end{array}
+    \right) 
+\end{equation}
+\end{verbatim}
+\texttt{[1]} のように，\verb/\arraycolsep/ の値を
+小さくしてみるか（デフォルトは5\,pt），
+\texttt{[2]} のように \texttt{@} 表現を使います。
+\begin{equation}
+\arraycolsep=3pt
+A = \left(
+  \begin{array}{@{\hskip2pt}cccc@{\hskip2pt}}
+   a_{11} & a_{12} & \ldots & a_{1n} \\
+   a_{21} & a_{22} & \ldots & a_{2n} \\
+   \vdots & \vdots & \ddots & \vdots \\
+   a_{m1} & a_{m2} & \ldots & a_{mn} \\
+  \end{array}
+    \right) \label{eq:ex2}
+\end{equation}
+式(\ref{eq:ex1})と(\ref{eq:ex2})を比べてください。
+
+\halflineskip
+\hfuzz.5pt
+
+\noindent
+{\bfseries 例6}\hskip1\zw 
+\texttt{pmatrix} 環境は，例5と同じように \verb/\arraycolsep/ の値を変える。
+\begin{equation}
+ A = 
+ \begin{pmatrix}
+  a_{11} & a_{12} & \ldots & a_{1n} \\
+  a_{21} & a_{22} & \ldots & a_{2n} \\
+  \vdots & \vdots & \ddots & \vdots \\
+  a_{m1} & a_{m2} & \ldots & a_{mn} 
+ \end{pmatrix}
+ \label{eq:ex3}
+\end{equation}
+\verb/\arraycolsep/ のパラメータを小さくすることで
+コラムの幅を縮める（\texttt{[A]} 参照）。
+\begin{verbatim}
+\begin{equation}
+ %\arraycolsep=5pt % default
+ \arraycolsep=2pt  % [A]
+ A = 
+ \begin{pmatrix}
+  a_{11} & a_{12} & \ldots & a_{1n} \\
+  a_{21} & a_{22} & \ldots & a_{2n} \\
+  \vdots & \vdots & \ddots & \vdots \\
+  a_{m1} & a_{m2} & \ldots & a_{mn} 
+ \end{pmatrix}
+\end{equation}
+\end{verbatim}
+\begin{equation}
+ \arraycolsep=2pt
+ A = 
+ \begin{pmatrix}
+  a_{11} & a_{12} & \ldots & a_{1n} \\
+  a_{21} & a_{22} & \ldots & a_{2n} \\
+  \vdots & \vdots & \ddots & \vdots \\
+  a_{m1} & a_{m2} & \ldots & a_{mn} 
+ \end{pmatrix}
+ \label{eq:ex4}
+\end{equation}
+式(\ref{eq:ex3})と(\ref{eq:ex4})を比べてください。
+
+以上挙げたような処理でもなお数式がはみ出す場合は，
+あまり勧められませんが，以下のような方法があります。
+\begin{itemize}
+\item 
+\texttt{small}，\texttt{footnotesize} で数式全体を囲む。
+\item 
+分数が横に長い場合は，分子・分母を \texttt{array} 環境で2階建てにする。
+\item 
+二段抜きの \texttt{table*} もしくは \texttt{figure*} 環境に入れる。
+\end{itemize}
+
+\section{ソース・ファイル提出に際してのお願い}
+\label{source}
+
+\begin{enumerate}
+\item
+データの提出に関しては，
+「電気学会部門誌への投稿手引」を参照して下さい。
+\item
+ソース・ファイルはできるだけ
+1本のファイルにまとめてください。
+\item
+著者独自のマクロなど，コンパイルに必要なファイル，
+図のデータなどは忘れずコピーしてください。
+\end{enumerate}
+
+%% 著者名：「題目」，書名，巻，号，ページ（西暦発行年月） 
+\begin{thebibliography}{99}
+\bibitem{tex}
+D.E. クヌース：「\TeX{} ブック」，アスキー出版局（1989）
+
+\bibitem{ohno}
+大野義夫編：「\TeX{} 入門」，共立出版（1989）
+
+\bibitem{Seroul}
+R. Seroul \& S. Levy: 
+A Beginner's Book of \TeX{}, Springer-Verlag (1989)
+
+\bibitem{nodera1}
+野寺隆志：「楽々\LaTeX{}」，共立出版（1990）
+
+\bibitem{latex}
+レスリー・ランポート：
+「文書処理システム\LaTeX{}」，アスキー出版局（1990）
+
+\bibitem{itou}
+伊藤和人：「\LaTeX{} トータルガイド」，
+秀和システムトレーディング（1991）
+
+\bibitem{nodera2}
+野寺隆志：「今度こそ\AmSLaTeX{}」，共立出版，（1991）
+
+\bibitem{jiyuu}
+磯崎秀樹：「\LaTeX{} 自由自在」，サイエンス社，（1992）
+
+\bibitem{fujita}
+藤田眞作：「化学者・生化学者のための\LaTeX{}---パソコンによる論文作成の手引」，
+東京化学同人（1993）
+
+\bibitem{Gr}
+G. Gr\"{a}tzer: Math into \TeX{}\,--\,A Simple Introduction to \AmSLaTeX,
+Birkh\"{a}user (1993)
+
+\bibitem{Kopka}
+H. Kopka \& P.W. Daly: 
+A Guide to \LaTeX, Addison-Wesley (1993)
+
+\bibitem{Bech}
+S. von Bechtolsheim: \TeX{} in Practice, Springer-Verlag (1993)
+
+\bibitem{impress}
+鷺谷好輝：「日本語\LaTeX{} 定番スタイル集」，インプレス（1992--1994）
+
+\bibitem{styleuse}
+古川徹生・岩熊哲夫：
+「\LaTeX{} のマクロやスタイルファイルの利用」（1994）
+
+\bibitem{Ase}
+阿瀬はる美：「てくてく\TeX{}」，アスキー出版局（1994）
+
+\bibitem{Walsh}
+N. Walsh: Making \TeX{} Work, O'Reilly \& Associates (1994)
+
+\bibitem{Salomon}
+D. Salomon: 
+The Advanced \TeX{}book, 
+Springer-Verlag (1995)
+
+\bibitem{Nakano}
+中野賢：「日本語 \LaTeXe ブック」，アスキー出版局（1996）
+
+\bibitem{Fujita4}
+藤田眞作：「\LaTeXe{} 階梯」，
+アジソン・ウェスレイ・パブリッシャーズ・ジャパン（1996）
+
+\bibitem{}
+乙部巌己，江口庄英：
+「p\LaTeXe{} for Windows Another Manual Vol.0--2」，
+ソフトバンク（1996--1997）
+
+\bibitem{GS}
+江口庄英：「Ghostscript Another Manual」，ソフトバンク（1997）
+
+\bibitem{PA}
+P.W. Abrahams: \TeX{} for the Impatient, Addison-Wesley (1992)\hfil\break
+ポール・W・エイブラハム：「明快 \TeX{}」，
+アジソン・ウェスレイ・パブリッシャーズ・ジャパン（1997）
+
+\bibitem{FMi1}
+M. Goossens, F. Mittelbach \& A. Samarin: 
+The \LaTeX{} Companion, Addison-Wesley (1994)\hfil\break
+マイケル・グーセンス，フランク・ミッテルバッハ，アレキサンダー・サマリン：
+\LaTeX{} コンパニオン，アスキー出版局（1998）
+
+\bibitem{Eijkhout}
+V. Eijkhout: \TeX{} by Topic, Addison-Wesley (1991)\hfil\break
+ビクター・エイコー：
+「\TeX{} by Topic---\TeX{} をよく深く知るための39章」，
+アスキー出版局（1999）
+
+\bibitem{Lipkin}
+B.S. Lipkin: 
+\LaTeX{} for Linux, Springer-Verlag New York (1999)
+
+\bibitem{FMi2}
+M. Goossens, S. Rahts, and F. Mittelbach: 
+The \LaTeX{} Graphics Companion, Addison-Wesley (1997)\hfil\break
+マイケル・グーセンス，セバスチャン・ラッツ，フランク・ミッテルバッハ：
+「\LaTeX{} グラフィックスコンパニオン」，
+アスキー出版局（2000）
+
+\bibitem{Okumura}
+奥村晴彦：「［改訂第5版］\LaTeXe{} 美文書作成入門」，
+技術評論社（2010）
+
+\bibitem{FMi3}
+M. Goossens, and S. Rahts: 
+The \LaTeX{} Web Companion,  
+Addison-Wesley (1999)\hfil\break
+マイケル・グーセンス，セバスチャン・ラッツ：
+「\LaTeX{} Web コンパニオン」，アスキー出版局（2001）
+
+\bibitem{PEn}
+ページ・エンタープライゼス：
+「\LaTeXe\ マクロ \& クラスプログラミング基礎解説」，
+技術評論社（2002）
+
+\bibitem{Fujita5}
+藤田眞作：
+「\LaTeXe\ コマンドブック」，
+ソフトバンク（2003）
+
+\bibitem{Yoshinaga}
+吉永徹美：
+「\LaTeXe\ マクロ \& クラスプログラミング実践解説」，
+技術評論社（2003）
+\end{thebibliography}
+
+\raggedbottom
+\appendix
+
+%\section*{「巻頭言」の記述}
+%「巻頭言」はスタイルが一定でないためサポートしない
+%\begin{verbatim}
+%\documentclass[foreword,fleqn]{ieej}
+%\jtitle{和文タイトル}
+%\etitle{英文タイトル}
+%\authorlist{%
+% \authorentry{日本語名}{ローマ字名}
+%  {会員種別}{ラベル}
+%}
+%\affiliate[ラベル]
+% {和文所属\\ 連絡先}
+% {英文所属\\ 連絡先}
+%\end{verbatim}
+%%「巻頭言」用に foreword オプション
+%% etitle 部分は脚注に出力されることを除けば「論文」と同じ
+%% \authorentry{電力・エネルギー部門編修委員会}{}{}{} のように引数を空にする
+
+\section{PDF の作成方法}
+
+PDF に書き出すには以下の方法が一般的です。
+\begin{itemize}
+\item
+dvipdfmx を使って dvi ファイルを PDF に変換します。
+\begin{verbatim}
+dvipdfmx -p a4 -o file.pdf file.dvi
+\end{verbatim}
+
+%\item
+%EPSの図を利用する場合は，dvips を使用して，ps に書き出します。
+%以下では段幅の関係で折り返しています。
+%\texttt{printer} には，お使いのプリンタ名を記述します。
+%\begin{verbatim}
+%dvips -Pprinter -t a4 -O 0mm,0mm
+%  -o file.ps file.dvi
+%\end{verbatim}
+%次に Acrobat Distiller で PDF に変換します。
+\end{itemize}
+
+\section{クラスファイルから削除したコマンド}
+
+本誌の投稿論文作成に必要ないコマンドは本クラスファイルから
+削除しました。削除したコマンドは，
+
+\noindent
+\verb/\tableofcontents/，
+\verb/\titlepage/，
+\verb/\part/，
+\verb/\theindex/，\allowbreak
+\texttt{headings}，\texttt{myheadings} と
+これらに関連したコマンドなどです。
+
+%\makeatletter
+%\def\ieej@in@ext{jpg}
+%\makeatother
+
+\begin{biography}
+\profile{m}{電子 太郎}{%
+19xx 年生。19xx 年 xx 月 XX 大学工学部電気科卒業。
+19xx 年同大学助手。19xx 年同講師。19xx 年同助教授。
+工学博士。主として XX に関する研究に従事。
+}
+
+\profile{n}{電気 花子}{%
+19xx 年生。19xx 年 xx 月 XX 大学工学部電気科卒業。
+19xx 年 XX（株）に入社。19xx 年同社 XX 研究所所長。
+現在，XX に勤務。
+}
+\end{biography}
+
+\end{document}

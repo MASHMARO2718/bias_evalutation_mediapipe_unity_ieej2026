@@ -1,0 +1,52 @@
+{
+  "LEFT_ANKLE": {
+    "before": 168.7,
+    "after": 11.3,
+    "improvement": 157.4
+  },
+  "LEFT_ELBOW": {
+    "before": 121.6,
+    "after": 58.3,
+    "improvement": 63.3
+  },
+  "LEFT_KNEE": {
+    "before": 161.7,
+    "after": 17.4,
+    "improvement": 144.3
+  },
+  "LEFT_SHOULDER": {
+    "before": 169.5,
+    "after": 10.4,
+    "improvement": 159.1
+  },
+  "LEFT_WRIST": {
+    "before": 94.3,
+    "after": 84.3,
+    "improvement": 10.0
+  },
+  "RIGHT_ANKLE": {
+    "before": 167.9,
+    "after": 11.9,
+    "improvement": 156.0
+  },
+  "RIGHT_ELBOW": {
+    "before": 121.2,
+    "after": 59.3,
+    "improvement": 61.9
+  },
+  "RIGHT_KNEE": {
+    "before": 162.2,
+    "after": 18.5,
+    "improvement": 143.7
+  },
+  "RIGHT_SHOULDER": {
+    "before": 171.2,
+    "after": 9.3,
+    "improvement": 161.9
+  },
+  "RIGHT_WRIST": {
+    "before": 93.1,
+    "after": 91.5,
+    "improvement": 1.6
+  }
+}

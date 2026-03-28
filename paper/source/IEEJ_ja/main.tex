@@ -1,0 +1,920 @@
+% !TeX program = lualatex
+%% IEEJ Japanese manuscript (ieej.cls, UTF). Upload this folder to Overleaf as project root.
+%% Overleaf: Menu -> Compiler -> LuaLaTeX
+\documentclass[fleqn]{ieej}
+\usepackage[defaultsups]{newtxtext}
+\usepackage[varg]{newtxmath}
+\usepackage[superscript,nomove]{cite}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{dblfloatfix}
+\setcounter{topnumber}{6}
+\setcounter{bottomnumber}{6}
+\setcounter{totalnumber}{12}
+\renewcommand{\topfraction}{0.92}
+\renewcommand{\bottomfraction}{0.92}
+\renewcommand{\textfraction}{0.07}
+\renewcommand{\floatpagefraction}{0.72}
+\renewcommand{\dbltopfraction}{0.95}
+\renewcommand{\dblfloatpagefraction}{0.72}
+\setlength{\dbltextfloatsep}{8pt plus 4pt minus 3pt}
+\setlength{\dblfloatsep}{8pt plus 4pt minus 2pt}
+\usepackage{url}
+\usepackage{xurl}
+\usepackage[luatex,pdfencoding=auto]{hyperref}
+\hypersetup{%
+ setpagesize=false,
+ colorlinks=true,
+ urlcolor=blue,
+ citecolor=black,
+ linkcolor=black,
+}
+
+%% --- Journal metadata (fill before submission) ---
+\FIELD{}
+\YEAR{}
+\NO{}
+%% \received{2026}{3}{15}
+%% \revised{}{}{}
+
+\jtitle{Unity 環境を用いた MediaPipe 姿勢推定のバイアス評価}
+\etitle{Bias Evaluation of MediaPipe Pose Estimation Using a Unity Simulation Environment}
+
+\authorlist{%
+ \authorentry{平良 文磨}{Fumimaro Taira}{n}{KHS}
+ \authorentry{加藤 司}{Tsukasa Kato}{m}{UEC}
+ \authorentry{安富祖 仁}{Jin Afuso}{n}{LOL}
+}
+\affiliate[KHS]
+ {沖縄県立開邦高等学校}
+ {Okinawa Prefectural Kaiko High School}
+\affiliate[UEC]
+ {琉球大学大学院教育学研究科}
+ {Graduate School of Education, University of the Ryukyus}
+\affiliate[LOL]
+ {株式会社lollol}
+ {lollol Inc.}
+
+\begin{document}
+\begin{abstract}
+本研究は，Unityシミュレーション環境で収集したグラウンドトゥルース（GT）を
+用いて，MediaPipeによる姿勢推定の\textbf{系統的バイアス}を定量的に解明することを
+目的とする．
+GTは\emph{合成データ}（レンダリングされたヒューマノイド，幾何・照明を制御した条件）であり，
+得られた統計はその再現条件下での推定器挙動を示すものであり，
+実被験者・実環境映像への一般化は別途検証が必要である．
+従来の評価研究は正面・限定視点での精度指標（単一数値）の報告に留まっていたが，
+本研究は実用場面で生じる\textbf{予測可能・構造的な誤差パターン}――
+モデルアーキテクチャ，学習データ分布，座標系の慣例に起因するバイアス――を
+体系的に特定・定量化する．
+
+505台の多視点カメラ（高さ4層）から107フレームを収集し，
+12関節 $\times$ 259,356件の観測データを得た．
+評価指標として関節角度誤差（MAE）と方向角誤差（$\Delta\theta$，$\Delta\psi$）を用い，
+以下の4種のバイアスを同定した：
+
+\begin{itemize}\itemsep0pt
+  \item \textbf{座標系バイアス}：UnityとMediaPipeの$y$軸慣例の差に起因する$\theta$の系統誤差．
+        $y \leftarrow -y$により平均$|\Delta\theta|$が関節ごとに大幅に低下する（表~\ref{tab:yflip_effect}）．
+  \item \textbf{骨盤回転アーティファクト}：剛体GT骨盤にもかかわらず，
+        左右股の$\Delta\psi$が強い負相関（$r=-0.84$）を示し疑似的な骨盤ねじれに見える現象．
+        リフトされた骨格に明示的骨盤剛性がないことで説明できる
+        （図~\ref{fig:hip_psi_heatmap}；表~\ref{tab:correlation_psi}）．
+  \item \textbf{上肢連動バイアス}：肩・肘・手首間で$\Delta\psi$（および関連する$\Delta\theta$）が
+        正相関（$r=0.72$--$0.77$）し，単眼リフティングにおける階層的伝播または
+        暗黙の結合と整合（表~\ref{tab:correlation_theta}，表~\ref{tab:correlation_psi}；
+        図~\ref{fig:correlation_heatmaps}）．
+  \item \textbf{視点バイアス}：表~\ref{tab:mae_by_layer}においてY$=$2.0\,mがY$=$1.0\,mに対し
+        最大約15\%のMAE増となり，図~\ref{fig:mae_layer_compare}の空間分布とも一致し，
+        学習データの正面視点偏重と整合的である．
+\end{itemize}
+
+\medskip
+\noindent\textbf{Abstract:}\quad
+This study quantifies systematic biases in MediaPipe pose estimation using
+ground truth from a Unity simulation with 505 multi-view cameras on four
+height layers.
+The GT is synthetic; the reported statistics therefore describe estimator
+behaviour under these reproducible conditions, and generalisation to real
+subjects and in-the-wild video requires independent validation.
+Whereas prior evaluations emphasise single-number accuracy under limited
+viewpoint conditions, we identify structured error patterns arising from model
+architecture, training-data priors, and coordinate conventions.
+We collected 259{,}356 joint observations (107 frames $\times$ 505 cameras
+$\times$ 12 joints) and analysed joint-angle MAE and direction-angle errors
+($\Delta\theta$, $\Delta\psi$).
+Four systematic biases are identified and linked to primary evidence:
+coordinate-system bias mitigated by $y \leftarrow -y$
+(Table~\ref{tab:yflip_effect}); a pelvic rotation artefact from
+anti-correlated hip $\Delta\psi$ ($r=-0.84$); upper-limb coupling in
+$\Delta\psi$ ($r=0.72$--$0.77$); and viewpoint-dependent MAE increasing at
+overhead cameras, consistent with a frontal prior in training data
+(Table~\ref{tab:mae_by_layer}, Figure~\ref{fig:mae_layer_compare}).
+\end{abstract}
+\begin{jkeyword}
+MediaPipe，BlazePose，姿勢推定，バイアス評価，Unity，シミュレーション，方向角誤差
+\end{jkeyword}
+\begin{ekeyword}
+MediaPipe, BlazePose, pose estimation, bias evaluation, Unity simulation, direction angle error
+\end{ekeyword}
+\maketitle
+\section{はじめに}
+
+姿勢推定はスポーツ分析，臨床リハビリテーション，人間工学，
+ヒューマンコンピュータインタラクションの中核技術として定着している
+\cite{mediapipe,blazepose}．
+Googleが開発したMediaPipeは，GPUを必要とせず
+コモディティハードウェア上でリアルタイム処理を実現できる点で
+実務上の採用が急速に拡大している\cite{mediapipe}．
+
+MediaPipeの3D精度に関する系統的・多視点評価は依然として不足している．
+Bazarevsky~ら\cite{blazepose}はBlazePoseのベンチマーク性能を報告しているが，
+その評価は視点多様性が限定されたキュレーションベンチマークに限定されている．
+実際の展開環境ではカメラ配置を自由に選択できないことも多く，
+視点によって精度がどう変化するかを理解することは不可欠である．
+
+BlazePoseおよび関連推定器の独立評価研究（第2節で詳述）は
+標準ベンチマーク・正面近傍視点での精度評価に集中しており，
+多様なカメラ高さと水平位置にわたる系統的な多視点評価は
+実施されていない．
+シミュレーションベースのGT収集――SURREAL\cite{surreal}が先駆けとなり，
+その後Unityベースのジェネレータ\cite{peoplesanspeople}に発展――は，
+追加の計測機器なしに任意の視点から完全に制御されたカメラ配置で
+大規模データを取得できるスケーラブルな手法を提供する．
+
+単眼3D姿勢推定の根本的課題は奥行き曖昧性である：
+1枚の2D画像投影から3D関節位置を一意に決定することはできず，
+推定精度は学習データの視点分布に強く依存する\cite{mehta2017}．
+COCO\cite{coco}をはじめとする公開データセットは
+正面・立位・歩行姿勢が支配的であり，
+これが学習モデルに正面視点バイアスを埋め込み，
+側方・俯瞰カメラへの汎化性能を低下させる．
+本研究はこの仮説を505カメラ位置で直接検証し，
+さらにUnityとMediaPipeの間に存在する系統的なY軸座標不整合を同定する．
+未修正では近位関節の平均$|\Delta\theta|$が例えば肘で$\approx121^{\circ}$に達しうる．
+
+本論文の貢献は以下のとおりである：
+\begin{enumerate}\itemsep0pt
+  \item \textbf{MediaPipeバイアス分類}：操作定義を伴う4クラスに分け，
+        それぞれ主要根拠を明示する：
+        座標$y$符号効果（表~\ref{tab:yflip_effect}；第3.4節），
+        股$\Delta\psi$の負相関（図~\ref{fig:hip_psi_heatmap}，表~\ref{tab:correlation_psi}），
+        上肢誤差結合（表~\ref{tab:correlation_theta}--\ref{tab:correlation_psi}，
+        図~\ref{fig:correlation_heatmaps}），
+        視点依存MAE（表~\ref{tab:mae_by_layer}，図~\ref{fig:mae_layer_compare}）．
+  \item \textbf{座標系バイアス修正}：UnityとMediaPipeのY軸方向不整合を同定し，
+        関節ごとの影響量（$|\Delta\theta|$の最大削減$161^{\circ}$）を定量化し，
+        修正式 $y \leftarrow -y$ を提供する．
+  \item \textbf{方向角指標の導入}：$\Delta\theta$と$\Delta\psi$を
+        関節角度MAEの補完指標として導入する．
+        これらの指標は骨盤アーティファクトなど
+        MAEでは不可視のバイアスパターンを顕在化させる．
+  \item \textbf{大規模多視点データセット}：505カメラ位置 $\times$
+        107フレームによる259,356件の観測データを構築し，
+        標準ベンチマークにない側方・俯瞰視点を含む
+        知る限り公開文献で初のMediaPipe視点バイアス系統分析を実現する．
+\end{enumerate}
+
+本稿では，第2節で関連研究を概説し，第3節で実験方法，第4節で実験結果，
+第5節で考察，第6節で結論を述べる．
+
+% ============================================================
+% 2. 関連研究
+% ============================================================
+\section{関連研究}
+
+\subsection{MediaPipeとBlazePoseの精度評価}
+
+BlazePoseはBazarevsky~ら\cite{blazepose}によって提案され，
+COCOバリデーションセットでPCK@0.2=72.0\,\%を報告し，
+独自のフィットネス動画ベンチマークでも高精度を達成したとされる．
+ただしその評価は，フィットネス映像に典型的な正面に近い視点に限定されており，
+多様なカメラ視点での性能は評価されていない．
+
+BlazePoseの元評価\cite{blazepose}は多様なカメラ視点にわたる
+系統的な精度データを提供していない．
+本研究はこのギャップを埋め，
+高さ4層（Y$=$0.5--2.0\,m）を網羅する505カメラの3Dグリッドで
+系統的な視点別精度分析を初めて実施する．
+
+\subsection{シミュレーションベースのGT収集}
+
+実世界で大規模かつ正確な3D GTを得ることは困難である：
+手動3Dアノテーションは労働集約的であり，
+光学式モーションキャプチャシステムは高コストかつ実験室限定である．
+合成レンダリングはその代替として標準的アプローチとなっている．
+Varol~ら\cite{surreal}はSURREALを提案し，
+SMPLボディアバターの完全な2D/3D姿勢・深度・セグメンテーションラベルを
+600万フレーム以上生成した．
+Patel~ら\cite{agora}はAGORAで，
+高品質テクスチャを持つボディスキャンを自然な屋外環境に合成し，
+現実的な合成データが3DPWベンチマークの性能を向上させることを示した．
+
+ゲームエンジンベースのシステムはカメラ完全制御という追加利点を持つ．
+Ebadi~ら\cite{peoplesanspeople}はUnityベースの合成データジェネレータ
+PeopleSansPeopleを公開した．
+本研究も同様にUnityシミュレーション環境を活用し，
+505台の系統的に配置されたカメラから正確なフレーム単位3D関節座標を記録する
+——物理的なモーションキャプチャ設備では経済的に実現困難な視点一斉取得である．
+
+\subsection{単眼3D姿勢推定と奥行き曖昧性}
+
+単眼RGBカメラから3D姿勢を復元することは本質的に不良設定問題である：
+多くの3D配置が透視投影で同一の2D画像に写像される．
+Mehta~ら\cite{mehta2017}はマルチデータセット転移学習によって野外シーンへの
+汎化を改善し，標準的なポーズベンチマークより視点多様性の高い
+MPI-INF-3DHPベンチマークを導入したが，
+側方・俯瞰視点は学習コーパスでなお過少代表されたままである．
+
+COCO\cite{coco}をはじめとする公開データセットは
+正面に近い立位・歩行姿勢が支配的であり，
+学習モデルに強い正面視点バイアスを埋め込む．
+このバイアスにより，側方・俯瞰配置のカメラでは精度が低下する
+——本研究の多層評価がこれを定量的に確認する（表~\ref{tab:mae_by_layer}）．
+また，MediaPipeの骨格モデルは骨盤をランドマーク23（左股関節）と
+24（右股関節）を結ぶ単純な線分として表現しており，
+剛体多セグメント構造を持たない．
+このため2D画像上のわずかな水平画素差が3D復元時に
+大きな骨盤回転として誤解釈され，
+第4節で報告する左右対称な股関節奥行き誤差（$r=-0.840$）を生じさせる．
+
+\subsection{骨格拘束モデル}
+
+奥行き曖昧性を緩和するために解剖学的・時間的拘束を課す
+アーキテクチャが提案されている．
+Mehta~ら\cite{vnect}は骨長一貫性とフレーム間時間安定性を課す
+運動学的骨格フィッティング段階を持つリアルタイム単眼3D姿勢推定を実現した．
+PoseFormer\cite{poseformer}は畳み込み層を持たない純粋なトランスフォーマーベースの
+ビデオ姿勢推定器であり，Human3.6Mで44.3\,mm MPJPEを達成した．
+MotionBERT\cite{motionbert}はノイズのある2D観測から3Dモーションを復元する
+デュアルストリーム時空間トランスフォーマーを事前学習し，
+Human3.6Mで39.2\,mm MPJPEを達成した．
+
+これらの進歩にもかかわらず，骨盤剛性を陽的な硬拘束として課す手法は稀である．
+本研究で観測された股関節の反相関（$r=-0.840$）は，
+歩行動作における左右股関節深度を剛体骨盤モデルの下で
+相互整合させる拘束が奥行き誤差を大幅に低減できる可能性を示唆しており，
+将来のモデル設計に向けた推奨方向として提示する．
+
+% ============================================================
+% 3. 実験方法
+% ============================================================
+\section{実験方法}
+
+\subsection{実験環境}
+
+Unity（バージョン6000.0.60f1）を用いて，
+Y-Botヒューマノイドアバターの歩行シミュレーション環境を構築した．
+アバターは座標$(0,\,0,\,-3)$から$(0,\,0,\,3)$まで
+Z軸正方向に直進歩行した．
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{figs/fig01_camera_layout.png}
+\caption{カメラ配置図（高さ4層 Y$=$0.5, 1.0, 1.5, 2.0\,mにわたる505台）．
+  中央の矢印はアバターの歩行方向（+Z軸方向）を示す．}
+\label{fig:camera_layout}
+\end{figure}
+
+カメラは高さ4層（Y$=$0.5, 1.0, 1.5, 2.0\,m）と
+水平位置（X, Z $\in [-6, 6]$\,m）を網羅する3Dグリッドに配置した．
+各層では $13\times13$ グリッドから中央の $5\times5$ ブロックを除外し，
+理論上最大 $4(13^2-5^2)=576$ 台のうち505台でデータを収集した．
+各位置から解像度 $1280\times720$ピクセルで107フレームを撮影し，
+総計259,356件の関節観測値（可視性フィルタリング後）を得た．
+
+使用したアバターはY-Botメッシュ（Unity標準ヒューマノイドリグ）に
+組み込みループ歩行アニメーションクリップを適用したものである．
+モーションはZ軸正方向に約6\,mのパスを歩行し，
+1サイクル分の自然な関節角度変化を含む．
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\linewidth]{figs/fig02a_unity_env.png}
+  \vspace{0.3em}
+  \includegraphics[width=\linewidth]{figs/fig02b_frame_sample.jpg}
+  \caption{Unity実験環境（上）と撮影フレーム例（下，Y$=$0.5\,m, X$=$-1.0\,m, Z$=$-3.0\,m）．}
+  \label{fig:unity_env}
+\end{figure}
+
+\subsection{評価指標}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{figs/fig03_concept_metrics.png}
+\caption{2種の評価指標の概念図．左：関節角度（MAE）——3点による屈曲角
+  （$0$--$180^{\circ}$）．右：方向角（$\Delta\theta$，$\Delta\psi$）——
+  股関節中心を基準とした角度オフセット（$-180^{\circ}$から$+180^{\circ}$）．}
+\label{fig:concept_metrics}
+\end{figure}
+
+\paragraph{関節角度MAE}
+3点で定義される屈曲角をGTとMediaPipeそれぞれで計算し，
+絶対差の平均（MAE）を求める．これは関節可動域の推定精度を表す．
+
+\paragraph{方向角誤差（$\Delta\theta$，$\Delta\psi$）}
+股関節中心を原点として各関節の3D方向ベクトルを球面角（仰角$\theta$，
+方位角$\psi$）で表現し，GTとMediaPipe間のずれを求める．
+MAEが捉えられないモデルの系統的な方向バイアスを定量化する．
+
+\subsection{座標系統一}
+
+UnityはY軸上向き，MediaPipeはY軸下向きの座標系を採用する．
+このY軸方向の不整合により，未修正のMediaPipe座標から計算した$\theta$の
+符号が全関節で反転する．修正式は：
+\[
+  y_{\text{unified}} = -y_{\text{MediaPipe}}
+\]
+この変換を\path{06_direction_detection/scripts/coordinate_transform.py}
+に実装した．以下で報告する全ての方向角結果はこの座標統一後の値を用いる．
+
+\subsubsection{再現性とパイプライン}
+
+表~\ref{tab:repro_pipeline}に，本稿の数値・図表を再現する際の主なパスを示す．
+MediaPipeは\path{model_complexity=1}，\path{static_image_mode=True}，
+\path{min_detection_confidence=0.5}で推論し，
+可視性スコアが0.5未満のランドマークは解析から除外した．
+GT関節座標はUnityの\path{HumanBodyBones}からCSV出力した．
+関節角度MAEは\path{04_mae_heatmap/coordinate_angle_mae.csv}から集計し，
+方向角・相関は\path{processed_data}と\path{correlation_analysis}配下
+（\path{joint_summary.csv}，\path{detailed_results.csv}等）を用いた．
+フレーム別最良・最悪カメラは\path{frame_camera_summary.csv}から算出した．
+
+\begin{table}[!t]
+\centering
+\caption{再現に用いる主なスクリプト・CSV（リポジトリルート基準）．}
+\label{tab:repro_pipeline}
+\footnotesize
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.24\linewidth}>{\raggedright\arraybackslash}p{0.70\linewidth}}
+\toprule
+段階 & パス \\
+\midrule
+Y軸統一 & \path{06_direction_detection/scripts/coordinate_transform.py} \\
+関節角度MAE & \path{04_mae_heatmap/coordinate_angle_mae.csv} \\
+方向角統計 & \path{06_direction_detection/output/processed_data/joint_summary.csv} \\
+股関節詳細 & \path{06_direction_detection/output/processed_data/detailed_results.csv} \\
+相関表 & \path{06_direction_detection/output/correlation_analysis/*.csv} \\
+カメラ良否 $|\Delta\theta|$ & \path{06_direction_detection/output/processed_data/frame_camera_summary.csv} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{統計解析}
+
+表~\ref{tab:correlation_theta}，\ref{tab:correlation_psi}のPearson相関は
+フレーム--カメラ--関節のプール観測（各ペアで$n>21{,}000$）に基づく．
+$H_0:\rho=0$に対する両側検定はキャプションに$p<0.001$と記した．
+$\rho$の近似95\%信頼区間はFisherの$z$変換
+（$z=\mathrm{arctanh}(r)$，$\mathrm{SE}(z)\approx 1/\sqrt{n-3}$）による；
+$n$が大きいため$|r|\approx 0.8$付近でも幅は0.02未満に収まる（表~\ref{tab:bias_claim_evidence}）．
+関節角度MAEの高さ層別値（表~\ref{tab:mae_by_layer}）は記述統計として提示し，
+層間差の検定（反復測定ANOVAやクラスタ付きノンパラ検定など）は
+本稿の主目的（バイアス記述）からは省略し，
+「統計的有意な層差」を主張する場合は今後の追試験とする．
+
+% ============================================================
+% 4. 実験結果
+% ============================================================
+\section{実験結果}
+
+\subsection{バイアス主張と根拠・効果量}
+
+表~\ref{tab:bias_claim_evidence}に，各バイアス主張と根拠図表，
+代表値，統計上の注意を対応づけた．
+
+\begin{table*}[!t]
+\centering
+\caption{バイアス主張，根拠，代表効果量，統計メモ（相関は$n\approx 2.2\times 10^{4}$）．}
+\label{tab:bias_claim_evidence}
+\footnotesize
+\begin{tabular}{p{0.19\textwidth} p{0.21\textwidth} p{0.26\textwidth} p{0.28\textwidth}}
+\toprule
+主張 & 主根拠 & 代表効果量 & 有意性・CI \\
+\midrule
+座標$y$符号（統一前） &
+表~\ref{tab:yflip_effect}；3.4節 &
+右肩平均$|\Delta\theta|$削減$\approx\!161^{\circ}$ &
+決定的変換（確率モデルではない） \\
+骨盤／股奥行き連動 &
+表~\ref{tab:correlation_psi}；図~\ref{fig:hip_psi_heatmap} &
+LEFT\_HIP--RIGHT\_HIP：$r=-0.840$ &
+$p<0.001$；95\%CI $\approx[-0.844,-0.836]$ \\
+上肢連動（$\Delta\psi$） &
+表~\ref{tab:correlation_theta}，\ref{tab:correlation_psi}；
+図~\ref{fig:correlation_heatmaps} &
+RIGHT\_ELBOW--RIGHT\_SHOULDER：$r=0.770$（例） &
+$p<0.001$；95\%CI $\approx[0.763,0.777]$ \\
+視点／俯瞰MAE &
+表~\ref{tab:mae_by_layer}；図~\ref{fig:mae_layer_compare} &
+右股MAE，Y=1.0比$+4.7^{\circ}$（$+15\%$） &
+記述（層間検定は任意） \\
+最良・最悪カメラ $|\Delta\theta|$ &
+\ref{subsec:camera_dep}節 &
+平均比$\approx 9$倍（$8.8^{\circ}$ vs.\ $80.1^{\circ}$） &
+記述（フレーム内ランキング） \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{関節角度MAE}
+
+表~\ref{tab:joint_angle_error}に8主要関節の
+MAE・中央値・最大値をまとめる．
+肘・膝の誤差が最も小さく，肩のMAEが最大であり，
+カメラに対して近位にある肩関節の奥行き曖昧性が大きいことと整合的である（数値は表に委ねる）．
+
+\begin{table}[!t]
+\centering
+\caption{関節角度誤差統計（関節角度MAE，単位：度）．
+  出典：\texttt{04\_mae\_heatmap/coordinate\_angle\_mae.csv}}
+\label{tab:joint_angle_error}
+\begin{tabular}{lccc}
+\toprule
+関節          & MAE    & 中央値 & 最大値  \\
+              & (deg)  & (deg)  & (deg)  \\
+\midrule
+左肩  & 39.8   & 39.2   & 70.1   \\
+右肩  & 39.0   & 40.0   & 58.2   \\
+左肘  & 18.6   & 15.9   & 56.9   \\
+右肘  & 18.2   & 13.6   & 46.2   \\
+左股関節  & 30.2   & 29.4   & 66.0   \\
+右股関節  & 33.3   & 32.2   & 81.7   \\
+左膝  & 17.0   & 16.6   & 43.4   \\
+右膝  & 19.5   & 19.4   & 62.3   \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+カメラ高さ層別のMAEは表~\ref{tab:mae_by_layer}と
+図~\ref{fig:mae_layer_bar}に示す．
+図~\ref{fig:mae_layer_compare}は左肘の3層ヒートマップを示す．
+Y$=$2.0\,m（俯瞰）で誤差が顕著に増加しており，
+BlazePoseの学習データに埋め込まれた正面視点バイアスと整合する．
+
+\subsection{方向角誤差（$\Delta\theta$，$\Delta\psi$）}
+
+座標系統一後の全12関節の方向角誤差統計を
+表~\ref{tab:direction_angle_error}に示す．
+
+\begin{table}[!t]
+\centering
+\caption{座標統一後の方向角誤差統計（単位：度，絶対値平均）．
+  出典：\texttt{joint\_summary.csv}（\texttt{processed\_data}）．
+  $^\ddagger$股関節の値は\texttt{detailed\_results.csv}から集計
+  （$n=21{,}613$件/関節，\texttt{joint\_summary.csv}から除外されているため）．}
+\label{tab:direction_angle_error}
+\small
+\begin{tabular}{lcccc}
+\toprule
+関節 & \multicolumn{2}{c}{$|\Delta\theta|$} & \multicolumn{2}{c}{$|\Delta\psi|$} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+     & 平均 & SD & 平均 & SD \\
+\midrule
+左肩   & 10.4 & 11.7 & 94.1 & 86.4 \\
+右肩   &  9.3 & 10.1 & 92.7 & 92.0 \\
+左肘   & 58.3 & 24.1 & 87.3 & 90.6 \\
+右肘   & 59.3 & 22.7 & 88.6 & 94.5 \\
+左手首 & 84.3 & 103.7 & 88.6 & 91.9 \\
+右手首 & 91.5 & 111.9 & 91.6 & 99.2 \\
+左股関節$^\ddagger$ & 83.5 & 72.5 & 88.9 & 26.4 \\
+右股関節$^\ddagger$ & 96.5 & 72.5 & 91.1 & 26.4 \\
+左膝   & 17.4 & 18.8 & 84.7 & 97.9 \\
+右膝   & 18.5 & 19.1 & 87.2 & 97.5 \\
+左足首 & 11.3 & 14.0 & 90.6 & 105.8 \\
+右足首 & 11.9 & 14.5 & 100.4 & 103.1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+図~\ref{fig:elbow_heatmaps}に肘$\Delta\theta$のカメラ位置別分布を示す．
+
+\begin{figure}[!t]
+  \centering
+  \begin{subfigure}[b]{0.48\linewidth}
+    \includegraphics[width=\linewidth]{figs/fig04a_elbow_L_theta_y05.jpg}
+    \caption{左肘 $\Delta\theta$（Y$=$0.5）}
+  \end{subfigure}\hfill
+  \begin{subfigure}[b]{0.48\linewidth}
+    \includegraphics[width=\linewidth]{figs/fig04b_elbow_R_theta_y05.jpg}
+    \caption{右肘 $\Delta\theta$（Y$=$0.5）}
+  \end{subfigure}
+  \caption{肘方向角誤差$\Delta\theta$のヒートマップ（Y$=$0.5）．
+    左右肘が逆符号パターンを示しており，
+    強い負の相関（$r=-0.862$）と整合する．}
+  \label{fig:elbow_heatmaps}
+\end{figure}
+
+図~\ref{fig:hip_psi_heatmap}に股関節$\Delta\psi$のヒートマップを示す．
+左右股関節はほぼ同一の絶対値パターンを示し，
+強い負の相関（$r=-0.840$）による骨盤回転アーティファクトを視覚化する．
+
+\begin{figure}[!t]
+  \centering
+  \begin{subfigure}[b]{0.48\linewidth}
+    \includegraphics[width=\linewidth]{figs/fig05a_hip_L_psi_y05.jpg}
+    \caption{左股関節 $\Delta\psi$（Y$=$0.5）}
+  \end{subfigure}\hfill
+  \begin{subfigure}[b]{0.48\linewidth}
+    \includegraphics[width=\linewidth]{figs/fig05b_hip_R_psi_y05.jpg}
+    \caption{右股関節 $\Delta\psi$（Y$=$0.5）}
+  \end{subfigure}
+  \caption{股関節方向角誤差$\Delta\psi$のヒートマップ（Y$=$0.5）．
+    $\Delta\psi_{\text{L}} \approx -\Delta\psi_{\text{R}}$（$r=-0.840$）のため，
+    左右がほぼ逆転した対称パターンを示す．}
+  \label{fig:hip_psi_heatmap}
+\end{figure}
+
+\begin{figure*}[!tb]
+  \centering
+  \begin{subfigure}[b]{0.31\textwidth}
+    \includegraphics[width=\linewidth]{figs/fig07a_mae_elbow_L_y05.png}
+    \caption{Y$=$0.5}
+  \end{subfigure}\hfill
+  \begin{subfigure}[b]{0.31\textwidth}
+    \includegraphics[width=\linewidth]{figs/fig07b_mae_elbow_L_y15.png}
+    \caption{Y$=$1.5}
+  \end{subfigure}\hfill
+  \begin{subfigure}[b]{0.31\textwidth}
+    \includegraphics[width=\linewidth]{figs/fig07c_mae_elbow_L_y20.png}
+    \caption{Y$=$2.0}
+  \end{subfigure}
+  \caption{左肘の関節角度MAEヒートマップ（カメラ高さ3層）．
+    Y$=$2.0（俯瞰）で誤差が増加し，学習データの視点バイアスと整合する．
+    出典：\texttt{04\_mae\_heatmap/}．}
+  \label{fig:mae_layer_compare}
+\end{figure*}
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\linewidth]{figs/fig08_mae_layer_bar.png}
+  \caption{カメラ高さ層別（Y$=$0.5, 1.0, 1.5, 2.0\,m）の関節角度MAE．
+    全関節でY$=$2.0で誤差が増加し，右股関節で最大（Y$=$1.0比$+4.7^{\circ}$，$+15\%$）．
+    出典：\texttt{04\_mae\_heatmap/}．}
+  \label{fig:mae_layer_bar}
+\end{figure}
+
+\begin{table}[!t]
+\centering
+\caption{カメラ高さ層別の関節角度MAE（単位：度）．
+  出典：\texttt{04\_mae\_heatmap}配下の\texttt{coordinate\_angle\_mae.csv}．}
+\label{tab:mae_by_layer}
+\small
+\begin{tabular}{lcccc}
+\toprule
+関節 & Y$=$0.5 & Y$=$1.0 & Y$=$1.5 & Y$=$2.0 \\
+\midrule
+左肩  & 39.8 & 38.9 & 39.6 & 41.0 \\
+右肩  & 39.3 & 38.1 & 38.6 & 40.2 \\
+左肘  & 18.1 & 17.7 & 18.3 & 20.2 \\
+右肘  & 17.5 & 16.7 & 18.2 & 20.2 \\
+左股関節 & 29.6 & 29.0 & 29.9 & 32.5 \\
+右股関節 & 32.0 & 31.7 & 32.8 & 36.7 \\
+左膝  & 16.1 & 16.6 & 17.7 & 17.8 \\
+右膝  & 18.9 & 18.7 & 19.6 & 20.6 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{関節間誤差相関}
+
+表~\ref{tab:correlation_theta}と表~\ref{tab:correlation_psi}に
+$\Delta\theta$および$\Delta\psi$の高相関ペア（$|r|>0.7$）を示す．
+全ペアで$p<0.001$（観測数$n>21{,}000$フレーム--カメラペア）．
+
+\begin{table}[!t]
+\centering
+\caption{XY平面（$\Delta\theta$）における高相関関節ペア（$|r|>0.7$）．
+  全ペア$p<0.001$（$H_0:\rho=0$，両側，$n>21{,}000$件）．
+  $\rho$の95\%区間はFisherの$z$で幅が極めて狭い．}
+\label{tab:correlation_theta}
+\small
+\begin{tabular}{llr}
+\toprule
+関節1        & 関節2        & $r$ \\
+\midrule
+左肘    & 右肘   & $-0.862$ \\
+左肘    & 左肩   &  $0.788$ \\
+右足首  & 右膝   &  $0.767$ \\
+左足首  & 左膝   &  $0.766$ \\
+右肘    & 右肩   &  $0.710$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[!t]
+\centering
+\caption{XZ平面（$\Delta\psi$）における高相関関節ペア（$|r|>0.7$）．
+  全ペア$p<0.001$（$H_0:\rho=0$，両側，$n>21{,}000$件）．
+  $\rho$の95\%区間はFisherの$z$で幅が極めて狭い．}
+\label{tab:correlation_psi}
+\small
+\begin{tabular}{llr}
+\toprule
+関節1        & 関節2         & $r$ \\
+\midrule
+左股関節  & 右股関節  & $-0.840$ \\
+右肘      & 右肩      &  $0.770$ \\
+右肘      & 右手首    &  $0.769$ \\
+左肘      & 左肩      &  $0.768$ \\
+右肩      & 右手首    &  $0.726$ \\
+左肘      & 左手首    &  $0.722$ \\
+右肘      & 右股関節  &  $0.721$ \\
+左股関節  & 右肘      & $-0.705$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure*}[!tb]
+  \centering
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figs/fig06a_corr_theta.png}
+    \caption{$\Delta\theta$（XY平面）}
+  \end{subfigure}\hfill
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figs/fig06b_corr_psi.png}
+    \caption{$\Delta\psi$（XZ平面）}
+  \end{subfigure}
+  \caption{関節間方向角誤差の相関行列．
+    (a) $\Delta\theta$は表~\ref{tab:correlation_theta}，
+    (b) $\Delta\psi$は表~\ref{tab:correlation_psi}に対応する．
+    出典：相関分析出力（\texttt{correlation\_analysis}）．}
+  \label{fig:correlation_heatmaps}
+\end{figure*}
+
+\subsection{3D位置誤差（MPJPE）}
+
+補足的な位置指標として，推定3Dランドマーク位置とGT位置の
+ユークリッド距離（MPJPE：Mean Per-Joint Position Error）を算出した．
+MediaPipe world座標系（身長1.7\,mの人物で1単位$\approx$1\,m）における
+全12関節の全体平均は0.363\,mである．
+股関節は座標系の原点であるため誤差が小さく（0.044\,m），
+遠位関節では誤差が大きい：足首（0.71\,m），
+手首（0.36--0.40\,m），肘（0.31--0.32\,m）．
+足首の大きな誤差は単眼復元における奥行き軸不確かさを主に反映しており，
+股関節原点からの誤差が運動学的連鎖に沿って蓄積する．
+
+\subsection{カメラ視点依存性}
+\label{subsec:camera_dep}
+
+フレームごとに全関節平均$|\Delta\theta|$が最小・最大となるカメラを同定した
+（\texttt{frame\_camera\_summary.csv}（\texttt{processed\_data}），
+107フレーム$\times$201カメラ/フレーム）．
+\emph{最良}カメラは全フレーム平均で$|\Delta\theta|=8.8^{\circ}$
+（フレーム間の最小値$6.1^{\circ}$，最大値$15.8^{\circ}$）．
+\emph{最悪}カメラは平均$80.1^{\circ}$（最小$55.6^{\circ}$，最大$148.1^{\circ}$），
+最良カメラとの平均$|\Delta\theta|$比でおおよそ9倍のギャップとなり，
+カメラ配置が推定品質に与える影響の大きさを示す．
+
+% ============================================================
+% 5. 考察
+% ============================================================
+\section{考察}
+
+\subsection{座標系統一効果}
+
+UnityとMediaPipeのY軸方向不整合は全関節の$\theta$に系統的な符号誤差を生じさせる．
+Y軸が反転している場合$\theta_{\text{MP}} \approx -\theta_{\text{GT}}$となるため，
+未修正の方向角誤差は$\Delta\theta \approx -2\theta_{\text{GT}}$となる；
+$\theta_{\text{GT}} \approx 60^{\circ}$の関節では$|\Delta\theta| \approx 120^{\circ}$に達する．
+$y \leftarrow -y$適用後の肩・肘を含む各関節の平均$|\Delta\theta|$低減は
+表~\ref{tab:yflip_effect}に集約される\cite{mediapipe_coord_issue}．
+肩・足首は最も恩恵を受け（$\Delta|\Delta\theta|>155^{\circ}$），
+手首は最小の改善に留まる（$<10^{\circ}$）．
+これは手首の推定分散が大きく，系統的な符号誤差を雑音が覆い隠すためである．
+
+\begin{table}[!t]
+\centering
+\caption{Y軸座標統一の効果：$y \leftarrow -y$適用前後の平均$|\Delta\theta|$（単位：度）．
+  出典：\texttt{coordinate\_transform.py}適用前後の比較（\texttt{06\_direction\_detection}）
+  適用前後の比較；3.4節）．}
+\label{tab:yflip_effect}
+\small
+\begin{tabular}{lrrr}
+\toprule
+関節     & 修正前 & 修正後 & 削減量 \\
+\midrule
+左肩  & 169.5 & 10.4 & 159.1 \\
+右肩  & 171.2 &  9.3 & 161.9 \\
+左肘  & 121.6 & 58.3 &  63.3 \\
+右肘  & 121.2 & 59.3 &  61.9 \\
+左手首 &  94.3 & 84.3 &  10.0 \\
+右手首 &  93.1 & 91.5 &   1.6 \\
+左膝  & 161.7 & 17.4 & 144.3 \\
+右膝  & 162.2 & 18.5 & 143.7 \\
+左足首 & 168.7 & 11.3 & 157.4 \\
+右足首 & 167.9 & 11.9 & 156.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+統一後も残存する$\approx58^{\circ}$の肘誤差は，
+座標系の不整合ではなく，学習データの視点不均衡と
+「腕を体側に下げた」姿勢バイアスによる真のバイアスを反映する．
+
+\subsection{奥行き推定における系統的バイアス}
+
+MediaPipeのBlazePoseは各ランドマークをヒートマップと回帰で推定し，
+股関節中心を基準とした3次元座標を出力する\cite{blazepose}．
+このアーキテクチャは骨長一貫性や骨盤剛性などの
+解剖学的拘束を陽的に組み込んでいない．
+座標統一後も肘$|\Delta\theta|\approx58^{\circ}$の残差が持続し，
+方向バイアスが根強く残ることを示す．
+
+COCO\cite{coco}などの学習データセットは
+日常的・正面近傍・立位/歩行姿勢が支配的であり，
+肘方向推定を下垂姿勢（体側）にバイアスさせる可能性が高い．
+左右肘誤差の逆符号パターン（$r=-0.862$）は
+左右フリップのデータ拡張と\emph{整合する}（MediaPipeの学習詳細は非公開）．
+肘$\Delta\theta$のSDが$\approx23$--$25^{\circ}$と小さいことは，
+このバイアスが比較的予測可能で後処理補正が可能であることを示す．
+
+\subsection{左右対称な股関節奥行き誤差}
+
+股関節では$|\Delta\psi|\approx90^{\circ}$かつ強い負の相関（$r=-0.840$）が示すように，
+奥行き方向誤差が反相関を示す：一方の股関節が前方に誤推定されると
+他方が後方に誤推定され，疑似骨盤回転アーティファクトが生じる．
+左右股関節のヒートマップが同一の絶対値パターンを示すことは
+（図~\ref{fig:hip_psi_heatmap}），
+各観測点での$\Delta\psi_{\text{L}} \approx -\Delta\psi_{\text{R}}$と整合する．
+
+MediaPipeの骨格モデルでは骨盤がランドマーク23（左股関節）と
+24（右股関節）を結ぶ線分として表現されており，
+仙骨・腸骨のような多セグメント剛体構造を持たない．
+したがって3D復元時の2つの股関節の相対深度に剛性拘束が課されない．
+その結果，2D画像上のわずかな水平画素差が
+一方の股関節を近く，他方を遠く配置することを意味する疑似骨盤回転として
+解釈され，左右対称誤差パターンが生じる．
+骨盤剛性を硬拘束または軟拘束として課すモデル改善が必要である．
+
+\subsection{上肢連動バイアス}
+
+$\Delta\psi$における肩・肘・手首の高い正の相関（$r=0.72$--$0.77$）は，
+誤差が運動学的連鎖に沿って階層的に伝播しているか，
+あるいは3D復元時に上肢が暗黙的に剛体として扱われていることを示唆する．
+グラフニューラルネットワークや陽的運動学モデルによる
+骨長拘束の組み込みがこの伝播を低減できる可能性がある．
+
+\subsection{視点依存性と学習データ偏り}
+
+結果節\ref{subsec:camera_dep}の統計（最良・最悪カメラ間で平均$|\Delta\theta|$がおおよそ9倍）と，
+表~\ref{tab:mae_by_layer}におけるY$=$2.0（俯瞰）のMAE上昇は，
+BlazePose学習データ（主にCOCO\cite{coco}およびフィットネス動画\cite{blazepose}）が
+正面・正面近傍視点に偏り，側方・俯瞰が過少代表であることと整合的に解釈できる．
+
+\subsection{実用的示唆}
+
+MediaPipeは2D関節位置推定に有用であるが，
+3D奥行き推定は単眼曖昧性により根本的に限界がある．
+画像平面内の相対関節角度で十分なアプリケーション
+（水泳のストロークカウント分析，粗大運動リハビリスクリーニングなど）では
+MediaPipeで十分対応できる．
+3D身体方向を必要とするアプリケーション
+（歩容分析，体幹回転の人間工学リスク評価など）では，
+ここで同定したバイアス――特に股関節$\Delta\psi$と肘$\Delta\theta$――を
+補償する必要がある．
+
+\paragraph{実装向けチェックリスト（非公式）．}
+\textbf{カメラ配置：}3D姿勢解釈が必要なら正面～やや斜めの視線高さを優先し，
+単一の俯瞰のみに依存しない．
+\textbf{注意視点：}大きな極角やY$\approx$2.0\,m層はMAEが増加（表~\ref{tab:mae_by_layer}）．
+\textbf{補正必須：}Unity系GTとMediaPipeの$\theta$を併用する際は$y \leftarrow -y$等で座標統一；
+股$\Delta\psi$と残差肘$\Delta\theta$はアプリ要件に応じ後処理を検討する．
+
+\subsection{限界と外的妥当性}
+
+限界を，解釈への影響度ごとに整理する：
+\begin{itemize}\itemsep2pt
+  \item \textbf{アバター外観（実人間への外挿への影響大）：}
+        Y-Bot標準材質で皮膚・衣服によるアーティファクトなし．
+        画素レベル誤差の\emph{大きさ}は実被験者で変わりうるが，
+        座標系の慣例差と単眼奥行きの構造は定性的に残ると考える．
+  \item \textbf{単一歩行クリップ（中程度）：}
+        スポーツ・座位・高速動作への一般化は未検証．
+  \item \textbf{照明・環境（外観駆動の失敗に中程度）：}
+        均一照明のため逆光・モーションブラー等は未評価．
+  \item \textbf{推定器1種（射程の境界）：}
+        数値はMediaPipe固有；手順（3.3--3.4節，表~\ref{tab:repro_pipeline}）は他推定器にも流用可．
+\end{itemize}
+
+% ============================================================
+% 6. 結論
+% ============================================================
+\section{結論}
+
+本研究では，Unityシミュレーション環境を用いた
+MediaPipe姿勢推定の大規模多視点バイアス評価を実施した．
+主な知見を以下に示す：
+
+\begin{itemize}\itemsep2pt
+  \item 関節別MAEおよび高さ層別の傾向（俯瞰での悪化含む）は
+        表~\ref{tab:joint_angle_error}および表~\ref{tab:mae_by_layer}に集約される．
+  \item 座標統一（$y \leftarrow -y$）による$|\Delta\theta|$の低減は表~\ref{tab:yflip_effect}に示す．
+  \item 残存する肘$|\Delta\theta|$は系統的でSDも小さく，後処理補正の余地がある（第5節）．
+  \item 股関節$|\Delta\psi|$と強い負相関は骨盤剛性拘束の欠如を反映する（第5節；表~\ref{tab:correlation_psi}）．
+  \item 上肢誤差の連動は階層的伝播を示唆する（表~\ref{tab:correlation_theta}--\ref{tab:correlation_psi}）．
+\end{itemize}
+
+将来の方向性として：
+（1）姿勢推定モデルへの骨盤剛性拘束の組み込み；
+（2）多様な角度の多視点データを用いたファインチューニング；
+（3）他推定器・動作タイプへの評価フレームワークの拡張；
+（4）肘・股関節誤差に対するアプリケーション特化補正フィルタの開発
+が挙げられる．
+
+% ============================================================
+
+\acknowledgment
+
+本研究は，科学技術振興機構（JST）
+次世代人材育成事業（グローバルサイエンスキャンパス）の支援を受けた．
+% 参考文献
+
+
+\begin{thebibliography}{99}
+
+\bibitem{mediapipe}
+Google LLC, ``MediaPipe Pose Landmarker,''
+\url{https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker},
+2024.
+
+\bibitem{mediapipe_coord_issue}
+Google, ``Orientation of pose world landmarks,''
+GitHub Issue \#3370, MediaPipe repository, 2022.
+\url{https://github.com/google/mediapipe/issues/3370}
+
+\bibitem{blazepose}
+V.~Bazarevsky, I.~Grishchenko, K.~Raveendran, T.~Zhu, F.~Zhang,
+and M.~Grundmann,
+``BlazePose: On-device real-time body pose tracking,''
+\textit{arXiv preprint arXiv:2006.10204}, 2020.
+
+\bibitem{unity}
+Unity Technologies, ``HumanBodyBones,''
+\textit{Unity Scripting Reference}, 2024,
+\url{https://docs.unity3d.com/ScriptReference/HumanBodyBones.html}.
+
+\bibitem{coco}
+T.-Y.~Lin et al.,
+``Microsoft COCO: Common Objects in Context,''
+in \textit{Proc. ECCV}, 2014, pp.~740--755.
+
+\bibitem{openpose}
+Z.~Cao, G.~Hidalgo, T.~Simon, S.-E.~Wei, and Y.~Sheikh,
+``OpenPose: Realtime Multi-Person 2D Pose Estimation Using Part Affinity
+Fields,''
+\textit{IEEE Trans. Pattern Anal. Mach. Intell.}, vol.~43, no.~1,
+pp.~172--186, 2021.
+
+\bibitem{surreal}
+G.~Varol et al.,
+``Learning from synthetic humans,''
+in \textit{Proc. CVPR}, 2017, pp.~109--117.
+
+\bibitem{agora}
+P.~Patel et al.,
+``AGORA: Avatars in geography optimized for regression analysis,''
+in \textit{Proc. CVPR}, 2021.
+
+\bibitem{peoplesanspeople}
+S.~E.~Ebadi et al.,
+``PeopleSansPeople: A synthetic data generator for human-centric
+computer vision,''
+\textit{arXiv preprint arXiv:2112.09290}, 2021.
+
+\bibitem{mehta2017}
+D.~Mehta et al.,
+``Monocular 3D human pose estimation in the wild using improved CNN
+supervision,''
+in \textit{Proc. Int.\ Conf.\ 3D Vision (3DV)}, 2017, pp.~506--516.
+
+\bibitem{vnect}
+D.~Mehta et al.,
+``VNect: Real-time 3D human pose estimation with a single RGB camera,''
+\textit{ACM Trans.\ Graph.}, vol.~36, no.~4, pp.~44:1--44:14, 2017.
+
+\bibitem{poseformer}
+C.~Zheng et al.,
+``3D human pose estimation with spatial and temporal transformers,''
+in \textit{Proc. ICCV}, 2021, pp.~11656--11666.
+
+\bibitem{motionbert}
+W.~Zhu et al.,
+``MotionBERT: A unified perspective on learning human motion
+representations,''
+in \textit{Proc. ICCV}, 2023.
+
+\end{thebibliography}
+
+
+\begin{biography}
+\profile{n}{平良 文磨}{沖縄県立開邦高等学校2年に在学．琉球大学主催の琉大SEARCHプログラムに基づく琉大カガク院の二段階生として加藤 司教授の研究室に所属し，モーショントラッキング技術に関する研究に従事している．}
+\profile{m}{加藤 司}{1999年3月，東京水産大学（現東京海洋大学）卒業．沖縄県立高等学校に勤務しながら2021年3月，琉球大学大学院総合知能工学専攻修了．博士（工学）．現在，琉球大学大学院教育学研究科高度教職実践専攻准教授として，映像授業の開発およびモバイルラーニングシステムの開発，技術動画の開発と効果検証，生成AIの教育利活用に関する研究に従事している．}
+\profile{n}{安富祖 仁}{2004年3月，琉球大学工学部情報工学科卒業．2013年3月，琉球大学大学院博士後期課程理工学研究科総合知能工学専攻修了．博士（工学）．同年4月より北海道大学大学院知識メディアラボラトリ特命研究員．2015年4月より琉球大学医学部附属病院特任助教．2017年12月より琉球大学工学部工学科社会基盤コース特命研究員を経て，現在はデータサイエンティストとして人工知能研究に従事．}
+\end{biography}
+
+\end{document}

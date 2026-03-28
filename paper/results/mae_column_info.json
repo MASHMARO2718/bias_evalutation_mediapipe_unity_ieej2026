@@ -1,0 +1,33 @@
+{
+  "y_col": "camera_y",
+  "joint_col": null,
+  "mae_col": null,
+  "df05_columns": [
+    "folder_name",
+    "camera_x",
+    "camera_y",
+    "camera_z",
+    "L_Elbow",
+    "R_Elbow",
+    "L_Knee",
+    "R_Knee",
+    "L_Shoulder",
+    "R_Shoulder",
+    "L_Hip",
+    "R_Hip"
+  ],
+  "df10_columns": [
+    "folder_name",
+    "camera_x",
+    "camera_y",
+    "camera_z",
+    "L_Elbow",
+    "R_Elbow",
+    "L_Knee",
+    "R_Knee",
+    "L_Shoulder",
+    "R_Shoulder",
+    "L_Hip",
+    "R_Hip"
+  ]
+}

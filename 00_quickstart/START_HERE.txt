@@ -1,0 +1,9 @@
+MotionTrack 初見ユーザー向け
+
+1. プロジェクトルート（このフォルダの1つ上）に移動
+2. pip install -r requirements.txt
+3. python run.py --dashboard
+4. python 09_dashboard/app.py  （プロジェクトルートから）
+5. ブラウザで http://127.0.0.1:8050/
+
+詳細は 00_quickstart/README.md。Docker は docs/DOCKER.md を参照。
