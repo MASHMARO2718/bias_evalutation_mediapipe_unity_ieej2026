@@ -6,13 +6,13 @@
 
 | フォルダ | スクリプト | 用途 |
 |----------|------------|------|
-| 08_theta_verification | test_*.py, run_all.py | 肘誤差検証テスト |
-| 07_paper | create_camera_layout.py | 論文用図作成 |
+| 07_theta_verification | test_*.py, run_all.py | 肘誤差検証テスト |
+| paper | create_camera_layout.py, source/prepare_ieej_overleaf.py | 論文用図・IEEJ 同梱物同期 |
 
 ## 本番で必要なもの
 
 - `run.py` … パイプライン実行
-- `09_dashboard/app.py` … 可視化
+- `08_dashboard/app.py` … 可視化
 - `verify_paper_data.py` … 論文検証
 
 ## 注意

@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8050:8050"
+    environment:
+      - DASH_HOST=0.0.0.0
+      - DASH_DEBUG=false
+    # データをボリュームで渡す場合（ローカルで生成済みの output を使用）
+    # volumes:
+    #   - ./06_direction_detection/output:/app/06_direction_detection/output:ro
+    #   - ./synced_joint_positions.csv:/app/synced_joint_positions.csv:ro

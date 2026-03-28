@@ -1,4 +1,4 @@
-# 08_theta_verification
+# 07_theta_verification
 
 121° 肘誤差の検証テスト用フォルダ。座標系ミスマッチの有無を確認する。
 
@@ -15,7 +15,7 @@
 ## 使い方
 
 ```bash
-cd 08_theta_verification
+cd 07_theta_verification
 python test_01_elbow_by_camera.py
 python test_02_error_vs_angle.py
 python test_03_single_camera_check.py
