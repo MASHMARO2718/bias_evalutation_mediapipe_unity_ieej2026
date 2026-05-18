@@ -9,7 +9,7 @@
 ## フォルダ構成
 
 ```
-09_A_Local-Linearity-Based_Parametric_Calibration.../
+09_calibration_framework/
 ├── docs/                          提案書 (設計ドキュメント)
 │   ├── 01_補正モデル・アーキテクチャ仕様.md
 │   ├── 02_局所線形補正フレームワーク提案.md
