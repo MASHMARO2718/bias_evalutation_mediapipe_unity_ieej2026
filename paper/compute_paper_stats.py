@@ -6,6 +6,23 @@ A3  Y-flip before/after comparison            -> results/yflip_comparison.json
 A5  Correlation p-values                      -> results/pvalue_results.json
 B3  MAE by camera height layer bar chart      -> results/mae_layer_bar.png
 B1  MPJPE proxy from error_3d                 -> results/mpjpe_stats.json
+
+データルートについて
+--------------------
+既定の ``DATA_ROOT`` は歴史的な作業コピー ``Zeval_DataSet`` を指す。旧フォルダ番号・
+綴り（``4_MAE_HEATMAP``, ``11_direction_ditection``）がパスに残っている。
+
+本リポジトリ（フォルダ番号整理後）に寄せる場合の対応例::
+
+    REPO = Path(__file__).resolve().parents[1]
+    DETAIL_CSV = REPO / "05_direction_detection/output/processed_data/detailed_results.csv"
+    JOINT_SUM_AFTER = REPO / "05_direction_detection/output/processed_data/joint_summary.csv"
+    MAE_CSVS = [REPO / f"03_joint_angle_mae/Y={y}/coordinate_angle_mae.csv"
+                for y in ("0.5", "1.0", "1.5", "2.0")]
+
+task_A3（Y-flip 前後比較）だけは「反転前」の出力が ``7_direction_ditection`` にしか
+無い可能性が高く、Zeval 側の二重パイプラインを前提とする。リポのみでは A3 を
+スキップするか、旧出力を別途用意する必要がある。
 """
 
 import json
@@ -31,6 +48,12 @@ MAE_CSV_Y10    = DATA_ROOT / "4_MAE_HEATMAP/Y=1.0.2.0/coordinate_angle_mae.csv"
 
 OUT_DIR = Path(__file__).parent / "results"
 OUT_DIR.mkdir(exist_ok=True)
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+MAE_LAYER_CSVS = [
+    (REPO_ROOT / f"03_joint_angle_mae/Y={y}/coordinate_angle_mae.csv", [float(y)])
+    for y in ("0.5", "1.0", "1.5", "2.0")
+]
 
 warnings.filterwarnings("ignore")
 
@@ -105,11 +128,15 @@ JOINT_MAP = {
 
 def task_B3():
     print("\n=== B3: MAE by layer ===")
-    df05 = pd.read_csv(MAE_CSV_Y05)
-    df10 = pd.read_csv(MAE_CSV_Y10)
-
     layer_mae = {}
-    for df_tmp, layers in [(df05, [0.5, 1.5]), (df10, [1.0, 2.0])]:
+    # リポ: 4 CSV（推奨）。無ければ Zeval の2バケット CSV にフォールバック
+    if all(p[0].is_file() for p in MAE_LAYER_CSVS):
+        todo = MAE_LAYER_CSVS
+    else:
+        todo = [(MAE_CSV_Y05, [0.5, 1.5]), (MAE_CSV_Y10, [1.0, 2.0])]
+
+    for df_path, layers in todo:
+        df_tmp = pd.read_csv(df_path)
         for layer in layers:
             sub = df_tmp[np.isclose(df_tmp["camera_y"].astype(float), layer, atol=0.05)]
             mae_by_joint = {}

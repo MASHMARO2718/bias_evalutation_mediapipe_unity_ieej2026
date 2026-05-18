@@ -8,7 +8,7 @@
    - Phase 3: 腰・キネマティック制約の検討
 
 2. **既存データを最大限活用**
-   - `06_direction_detection/output/processed_data/joint_summary.csv` → 補正パラメータ
+   - `05_direction_detection/output/processed_data/joint_summary.csv` → 補正パラメータ
    - ヒートマップ用データ → 視点別補正マップ
    - `correlation_analysis/*.csv` → 制約条件の設計
 

@@ -2,6 +2,9 @@
 
 GroundTruth（Unity）と MediaPipe の3D関節データを比較・可視化するパイプラインです。
 
+**ソースコード（GitHub）:** [MASHMARO2718/bias_evalutation_mediapipe_unity_ieej2026](https://github.com/MASHMARO2718/bias_evalutation_mediapipe_unity_ieej2026)  
+`git clone https://github.com/MASHMARO2718/bias_evalutation_mediapipe_unity_ieej2026.git`
+
 ---
 
 ## クイックスタート（3コマンド）
@@ -26,38 +29,43 @@ python run.py
 
 | コマンド | 説明 |
 |----------|------|
-| `python run.py` | 全パイプライン（01画像→09ダッシュボード） |
+| `python run.py` | 全パイプライン（01→02→03〜05→検証→07ダッシュボード既定ON） |
 | `python run.py --no-dashboard` | ダッシュボード起動なし |
 | `python run.py --no-mediapipe` | 02 以降のみ（02 が既にある場合） |
-| `python run.py --dashboard` | 06 のみ＋ダッシュボード起動（約1分） |
+| `python run.py --dashboard` | 方向角処理（ステップ4）のみ＋ダッシュボード起動（約1分） |
 | `python run.py --step 0` | MediaPipe のみ |
 | `python run.py --step 4` | ステップ4のみ |
-| `python 08_dashboard/app.py` | 可視化ダッシュボード起動 |
+| `python 07_dashboard/app.py` | 可視化ダッシュボード起動 |
 
 ---
 
 ## ディレクトリ構成
 
+番号付きフォルダは処理段階の目安です。**`run.py` が自動で回すのは** ステップ0（MediaPipe: `01`→`02`）〜ステップ5（`verify_paper_data.py`）と、完了時の **`07_dashboard` 起動（オプション）** までです。`06_theta_verification` と `08_dev` は手動実行用です。
+
 ```
-├── run.py                    # メイン実行
-├── config.py                 # 共通設定
+├── run.py / config.py / verify_paper_data.py
+├── synced_joint_positions.csv  # Unity GT（ローカル作業時。Git 方針は .gitignore 参照）
 ├── requirements.txt
 ├── docker-compose.yml
 │
-├── docs/                     # ドキュメント（DOCKER.md 等）
-├── docker/                   # Docker 定義
-├── paper/                    # 論文原稿・図・IEEJ Overleaf 用サブフォルダ
+├── docs/                     # 再現性・Zeval 対応表
+├── docker/
+├── paper/
+├── tools/                    # 移行スクリプトなど
 │
-├── 00_quickstart/            # 初見ユーザー向け
-├── 02_mediapipe_processed/   # 入力データ
-├── 03_cal_mae/               # 3点角MAE
-├── 04_mae_heatmap/           # MAE統計
-├── 05_max_angle_error/       # 最大角度誤差
-├── 06_direction_detection/   # 方向角分析・出力
-├── 07_theta_verification/    # θ検証・座標系確認
-├── 08_dashboard/             # 可視化
-└── 09_dev/                   # 開発者向け
+├── 00_quickstart/
+├── 01_input_photos/          # 入力画像（大容量のため通常 .gitignore）
+├── 02_mediapipe_processed/   # MediaPipe バッチ出力（Y=0.5 … Y=2.0 配下に CSV）
+├── 03_joint_angle_mae/       # 3点角 MAE（層別 CSV・統合・ヒートマップ）
+├── 04_max_angle_error/       # 最大角度誤差
+├── 05_direction_detection/   # 方向角・相関（論文 processed 系の主出力）
+├── 06_theta_verification/    # θ・座標系検証（run.py 対象外）
+├── 07_dashboard/             # Dash 可視化（run.py 末尾で起動可）
+└── 08_dev/                   # 開発メモ（run.py 対象外）
 ```
+
+MediaPipe の CSV は **リポジトリ直下ではなく** 常に `02_mediapipe_processed/Y=0.5/` のように `Y=` 接頭辞付きフォルダへ出ます（ルートに `0.5` だけのフォルダがあれば誤配置です）。
 
 ---
 
@@ -67,14 +75,24 @@ python run.py
 docker compose up --build
 ```
 
-→ http://localhost:8050/ でダッシュボードにアクセス。詳細は `docs/DOCKER.md` を参照。
+→ http://localhost:8050/ でダッシュボードにアクセス。`docker/` の Dockerfile を参照。
 
 ---
 
 ## 詳細
 
 - **初見向け**: `00_quickstart/`
-- **Docker**: `DOCKER.md`
+- **Docker**: `docker/`、`docker-compose.yml`
 - **論文・考察**: `paper/`（Overleaf 用は `paper/source/main.tex` と `paper/source/IEEJ_*`）
-- **開発者向け**: `09_dev/README.md`
+- **開発者向け**: `08_dev/README.md`
 - **旧パイプライン**: `run_full_pipeline.py` → `run.py` に委譲
+- **ローカル作業コピー Zeval_DataSet との対応**: `docs/ZEVAL_DATASET_LAYOUT.md`
+- **再現性・検証**: `docs/REPRODUCTION.md`、`python verify_paper_data.py`
+
+### 公開用リポジトリについて
+
+解析コードは上記 GitHub を正とします。生画像・全中間 CSV は容量のため Git に含めない想定で、不足分は Zenodo のデータセット（DOI）から補完します。
+
+**MediaPipe 中間 CSV（ZIP）**  
+DOI: [10.5281/zenodo.19296530](https://doi.org/10.5281/zenodo.19296530)  
+展開後の `mediapipe_processed_csv/Y=0.5/` … `Y=2.0/` を `02_mediapipe_processed/` 配下に置くと、以降のパイプラインと整合します（詳細はレコードの Description を参照）。Zenodo レコードの **Related works** に GitHub URL を登録しておくと、データとコードの対応が明確になります。

@@ -9,16 +9,6 @@
     "LEFT_KNEE": 16.1,
     "RIGHT_KNEE": 18.9
   },
-  "1.5": {
-    "LEFT_SHOULDER": 39.6,
-    "RIGHT_SHOULDER": 38.6,
-    "LEFT_ELBOW": 18.3,
-    "RIGHT_ELBOW": 18.2,
-    "LEFT_HIP": 29.9,
-    "RIGHT_HIP": 32.8,
-    "LEFT_KNEE": 17.7,
-    "RIGHT_KNEE": 19.6
-  },
   "1.0": {
     "LEFT_SHOULDER": 38.9,
     "RIGHT_SHOULDER": 38.1,
@@ -28,6 +18,16 @@
     "RIGHT_HIP": 31.7,
     "LEFT_KNEE": 16.6,
     "RIGHT_KNEE": 18.7
+  },
+  "1.5": {
+    "LEFT_SHOULDER": 39.6,
+    "RIGHT_SHOULDER": 38.6,
+    "LEFT_ELBOW": 18.3,
+    "RIGHT_ELBOW": 18.2,
+    "LEFT_HIP": 29.9,
+    "RIGHT_HIP": 32.8,
+    "LEFT_KNEE": 17.7,
+    "RIGHT_KNEE": 19.6
   },
   "2.0": {
     "LEFT_SHOULDER": 41.0,

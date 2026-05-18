@@ -7,13 +7,13 @@
 
 ## 1. ダッシュボードの独立化（実施済み）
 
-→ `09_dashboard/` に独立配置済み
+→ `07_dashboard/` に独立配置済み
 
 ---
 
 ## 2. フォルダ名の typo 統一（実施済み）
 
-→ 全参照を `06_direction_detection` 等に統一済み
+→ 全参照を `05_direction_detection` 等に統一済み
 
 ---
 
@@ -31,7 +31,7 @@
 
 ## 4. 設定の重複（実施済み）
 
-→ 06_direction_detection/config はルート config を参照
+→ 05_direction_detection/config はルート config を参照
 
 ---
 

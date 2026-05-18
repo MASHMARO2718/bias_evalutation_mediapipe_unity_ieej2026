@@ -83,7 +83,7 @@ Data source: `C:\projects\MOTIONTRACK\Zeval_DataSet`
 
 ## B3 — Joint Angle MAE by Camera Height Layer
 
-**Source:** `4_MAE_HEATMAP/Y=0.5,1.5/coordinate_angle_mae.csv` and `Y=1.0.2.0/coordinate_angle_mae.csv`  
+**Source:** `03_joint_angle_mae/Y=0.5/` … `Y=2.0/` each `coordinate_angle_mae.csv` (four layers; Zeval may still use `4_MAE_HEATMAP` two-bucket layout until migrated)  
 **n = 144 camera positions per height layer**
 
 | Joint          | Y=0.5 | Y=1.0 | Y=1.5 | Y=2.0 |

@@ -25,9 +25,8 @@
 
 | 論文プロンプト内の旧パス表記          | 実際の正しいパス                                         |
 |---------------------------------------|----------------------------------------------------------|
-| `06_direction_detection/output/`      | `Zeval_DataSet\11_direction_ditection\output\`           |
-| `04_mae_heatmap/Y=0.5,1.5/`          | `Zeval_DataSet\4_MAE_HEATMAP\Y=0.5,1.5\`               |
-| `04_mae_heatmap/Y=1.0.2.0/`          | `Zeval_DataSet\4_MAE_HEATMAP\Y=1.0.2.0\`               |
+| `05_direction_detection/output/`      | `Zeval_DataSet\11_direction_ditection\output\`           |
+| `03_joint_angle_mae/Y=0.5/` … `Y=2.0/` | 本リポは層ごと1 CSV。Zeval 未移行時は `4_MAE_HEATMAP\Y=0.5,1.5\` と `Y=1.0.2.0\` の2バケット |
 | `08_theta_verification/`              | `Zeval_DataSet\10_theta_verification\`                   |
 | `paper/source/figs/`（現行原稿の図）   | 主に本リポジトリ `paper/source/figs/`（原本）            |
 | （旧）`07_paper/Images/`              | `Zeval_DataSet\8_Paper\Images\`                          |
@@ -88,34 +87,34 @@ Left elbow     & [Δθ mean] & [Δθ SD] & [Δψ mean] & [Δψ SD] \\
 
 ## §2 — Y層別 MAE の読み取り（Table 1 の拡張）
 
-**目的**: カメラ高さ層別（Y=0.5,1.5 vs Y=1.0,2.0）のMAE比較データを取得する。
+**目的**: カメラ高さごと（Y = 0.5, 1.0, 1.5, 2.0 m）の MAE を取得する。
 
-**対象ファイル**（存在確認済み）:
+**対象ファイル**（優先: 本リポ `03_joint_angle_mae` の4層。無ければ Zeval の2バケット）:
 ```
-C:\projects\MOTIONTRACK\Zeval_DataSet\4_MAE_HEATMAP\Y=0.5,1.5\coordinate_angle_mae.csv
-C:\projects\MOTIONTRACK\Zeval_DataSet\4_MAE_HEATMAP\Y=1.0.2.0\coordinate_angle_mae.csv
+（リポ）…\bias_evaluation_…\03_joint_angle_mae\Y=0.5\coordinate_angle_mae.csv
+（同上）Y=1.0, Y=1.5, Y=2.0
+（Zeval 旧）C:\projects\MOTIONTRACK\Zeval_DataSet\4_MAE_HEATMAP\Y=0.5,1.5\coordinate_angle_mae.csv
+（Zeval 旧）C:\projects\MOTIONTRACK\Zeval_DataSet\4_MAE_HEATMAP\Y=1.0.2.0\coordinate_angle_mae.csv
 ```
 
 **やること**:
-1. 両ファイルのヘッダ行を確認し、列名を報告する。
-2. 各ファイルから以下8関節の MAE 値を抽出する:
+1. 各ファイルのヘッダ行を確認し、列名を報告する（4層ならヘッダは原則同一）。
+2. 各層・各ファイルから以下8関節の MAE 値を抽出する:
    - Left Shoulder, Right Shoulder
    - Left Elbow, Right Elbow
    - Left Hip, Right Hip
    - Left Knee, Right Knee
-3. 両Y層の値を並べた比較表を返す。
-4. ファイルが大きい場合（行数が多い場合）は、先頭20行を読んで
-   集計済み列（"MAE" や "mean" という列）を特定してから全体平均を返す。
+3. 4層（または2バケット内の `camera_y` 列で層を分けた結果）を並べた比較表を返す。
+4. ファイルが大きい場合は先頭20行で集計列（"MAE" や "mean"）を特定してから層別平均を返す。
 
-**返答形式**:
+**返答形式**（4層の例）:
 ```
-【Y=0.5,1.5 ヘッダ】列名: [...]
-【Y=1.0,2.0 ヘッダ】列名: [...]
+【ヘッダ】列名: [...]
 
-| Joint         | MAE Y=0.5,1.5 (deg) | MAE Y=1.0,2.0 (deg) |
-|---------------|---------------------|---------------------|
-| Left shoulder |                     |                     |
-| ...           |                     |                     |
+| Joint         | MAE Y=0.5 | MAE Y=1.0 | MAE Y=1.5 | MAE Y=2.0 |
+|---------------|-----------|-----------|-----------|-----------|
+| Left shoulder |           |           |           |           |
+| ...           |           |           |           |           |
 ```
 
 ---

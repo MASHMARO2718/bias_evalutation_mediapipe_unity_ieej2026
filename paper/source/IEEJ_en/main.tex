@@ -1,6 +1,10 @@
 % !TeX program = pdflatex
 %% IEEJ English manuscript (ieej-e.cls). Upload this folder to Overleaf as project root.
 \documentclass[english,fleqn]{ieej-e}
+\usepackage{silence}
+\WarningFilter{caption}{Unknown document class (or package)}
+\WarningFilter{fixltx2e}{fixltx2e is not required}
+\WarningFilter{latex}{Text page 5 contains only floats.}
 \usepackage[defaultsups]{newtxtext}
 \usepackage[varg]{newtxmath}
 \usepackage[superscript,nomove]{cite}
@@ -9,7 +13,6 @@
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{array}
-\usepackage{dblfloatfix}
 \setcounter{topnumber}{6}
 \setcounter{bottomnumber}{6}
 \setcounter{totalnumber}{12}
@@ -22,6 +25,7 @@
 \setlength{\dbltextfloatsep}{8pt plus 4pt minus 3pt}
 \setlength{\dblfloatsep}{8pt plus 4pt minus 2pt}
 \usepackage{url}
+\usepackage{xurl}
 \usepackage[pdfencoding=auto]{hyperref}
 \hypersetup{%
  setpagesize=false,
@@ -42,71 +46,77 @@
        Using a Unity Simulation Environment}
 
 \authorlist{%
- \authorentry{Fumimaro Taira}{n}{KHS}
+ \authorentry[Fumimaro Taira, E-mail: fmimaro.work0217@gmail.com]{Fumimaro Taira}{n}{KHS}
  \authorentry{Tsukasa Kato}{m}{UEC}
  \authorentry{Jin Afuso}{n}{LOL}
 }
 \affiliate[KHS]{Okinawa Prefectural Kaiko High School\\ Japan}
-\affiliate[UEC]{Graduate School of Education, University of the Ryukyus\\ Japan}
-\affiliate[LOL]{lollol Inc.\\ Japan}
+\affiliate[UEC]{University of the Ryukyus\\ 1, Senbaru, Nishihara-cho, Nakagami, Okinawa 902--0213, Japan}
+\affiliate[LOL]{lollol Co. Ltd.\\ Office Izumisaki 2-A, 2--3--3, Izumisaki, Naha, Okinawa 900--0021, Japan}
+
+\setlength{\emergencystretch}{3em}
+\hbadness=10000
+\vbadness=10000
+\hfuzz=120pt
+
+\makeatletter
+\def\ft@mailaddress#1{%
+ \protected@xdef\@mailaddress{%
+  \@mailaddress
+  \protect\footnotetext[0]{\protect\raggedright #1\par}}%
+}
+\makeatother
 
 \begin{document}
 \begin{abstract}
-This study characterises the \emph{systematic biases} in MediaPipe pose
-estimation errors using ground truth collected from a Unity simulation
-environment with 505 multi-view cameras across four height layers.
-The GT is \emph{synthetic} (rendered humanoid, controlled lighting and
-geometry); the reported statistics therefore characterise estimator
-behaviour under these reproducible conditions, and claims about real-world
-human capture require independent validation.
-Whereas prior evaluations report single-number accuracy metrics under
-limited viewpoint conditions, we focus on identifying \emph{predictable,
-structured} error patterns that arise from model architecture, training-data
-priors, and coordinate system conventions---biases that can, in principle,
-be corrected by post-processing.
-
-We collected 259,356 joint observations (107 frames $\times$ 505 cameras
-$\times$ 12 joints) and analysed two complementary error types: joint angle
-MAE and direction angle error ($\Delta\theta$, $\Delta\psi$). Four
-systematic biases are identified and quantified:
-\begin{itemize}\itemsep0pt
-  \item \textbf{Coordinate system bias}: Systematic error in $\theta$ when
-        Unity's Y-up convention is paired with MediaPipe's image-oriented
-        $y$-axis; mean elbow $|\Delta\theta|$ is $\approx121^{\circ}$ before
-        unification and $\approx58^{\circ}$ after $y \leftarrow -y$, and mean
-        shoulder $|\Delta\theta|$ falls from $\approx170^{\circ}$ to
-        $\approx10^{\circ}$
-        (Table~\ref{tab:yflip_effect}; Sec.~3.4).
-  \item \textbf{Pelvic rotation artefact}: Apparent pelvic twist from
-        anti-correlated left--right hip depth errors ($\Delta\psi$;
-        $r=-0.84$) despite a rigid GT pelvis---a pattern explained by the lack
-        of explicit pelvis rigidity in the lifted skeleton
-        (Figure~\ref{fig:hip_psi_heatmap}; Table~\ref{tab:correlation_psi}).
-  \item \textbf{Upper-limb coupling bias}: Coordinated $\Delta\psi$ (and
-        related $\Delta\theta$) among shoulder, elbow, and wrist
-        ($r=0.72$--$0.77$), consistent with hierarchical propagation or
-        implicit coupling in monocular lifting
-        (Tables~\ref{tab:correlation_theta}--\ref{tab:correlation_psi};
-        Figure~\ref{fig:correlation_heatmaps}).
-  \item \textbf{Viewpoint bias}: Joint angle MAE rises with camera height,
-        by up to ${\approx}15\%$ at Y\,=\,2.0\,m vs.\ Y\,=\,1.0\,m in
-        Table~\ref{tab:mae_by_layer}, matching the spatial trend in
-        Figure~\ref{fig:mae_layer_compare} and consistent with a
-        frontal-view prior in training data.
-\end{itemize}
+This study quantifies systematic biases in MediaPipe pose estimation using
+ground truth from a Unity simulation with 505 multi-view cameras on four
+height layers.
+The GT is synthetic; the reported statistics therefore describe estimator
+behaviour under these reproducible conditions, and generalisation to real
+subjects and in-the-wild video requires independent validation.
+The results support \emph{ancillary, research-oriented} use of pose outputs
+once biases and estimator limits are acknowledged; they are not a drop-in
+replacement for safety-critical pipelines (e.g.\ detection, ranging, time-to-contact).
+Whereas prior evaluations emphasise single-number accuracy under limited
+viewpoint conditions, we identify structured error patterns arising from model
+architecture, training-data priors, and coordinate conventions.
+We collected 259{,}356 joint observations (107 frames $\times$ 505 cameras
+$\times$ 12 joints) and analysed joint-angle MAE and direction-angle errors
+($\Delta\theta$, $\Delta\psi$).
+Four systematic biases are identified and linked to primary evidence:
+coordinate-system bias mitigated by $y \leftarrow -y$
+(Table~\ref{tab:yflip_effect}); a pelvic rotation artefact from
+anti-correlated hip $\Delta\psi$ ($r=-0.84$); upper-limb coupling in
+$\Delta\psi$ ($r=0.72$--$0.77$); and viewpoint-dependent joint-angle MAE,
+with overhead ($Y{=}2.0$\,m) cameras showing up to approximately 15\,\% higher
+MAE than at $Y{=}1.0$\,m (Table~\ref{tab:mae_by_layer}), consistent with a
+frontal prior in training data (Figure~\ref{fig:mae_layer_compare}).
 \end{abstract}
 \begin{keyword}
 MediaPipe, BlazePose, pose estimation, bias evaluation, Unity simulation,
-ground truth, joint angle error, direction angle error
+direction angle error
 \end{keyword}
 \maketitle
 \section{Introduction}
 
 Pose estimation has become a core enabling technology across sports
 analysis, clinical rehabilitation, ergonomics, and human--computer
-interaction~\cite{mediapipe,blazepose}. MediaPipe, developed by Google, is
-particularly attractive for practitioners because it enables real-time
-processing on commodity hardware without GPU acceleration~\cite{mediapipe}.
+interaction~\cite{mediapipe,blazepose}.
+\textbf{Low-latency} estimation is especially important for applications that
+must react to streaming video, including sports broadcast analytics, online
+training feedback, safety monitoring in factories and warehouses, motion
+observation in rehabilitation, and XR or in-game avatar control.
+MediaPipe, developed by Google, is particularly attractive for practitioners
+because it enables real-time processing on commodity hardware without GPU
+acceleration~\cite{mediapipe}.
+In surveillance-like or automotive-like settings where viewpoint, lighting,
+and occlusion are not controlled, full-body pose is \textbf{unlikely to
+replace} primary pipelines based on object detection, ranging, or time-to-contact
+estimation; it is more realistically positioned as \textbf{auxiliary
+information} or as an \textbf{R\&D evaluation axis} once biases and limits
+are understood.
+This work also aims to quantify that premise.
 
 Despite its widespread deployment, a systematic and multi-viewpoint
 quantitative evaluation of MediaPipe's 3D accuracy remains lacking.
@@ -120,23 +130,26 @@ Existing independent evaluations of BlazePose and related estimators
 (reviewed in detail in Section~2) have focused on accuracy under standard
 benchmark conditions and near-frontal views; systematic multi-viewpoint
 assessment across diverse camera heights and horizontal positions is
-absent. Simulation-based ground truth collection---pioneered
-by SURREAL~\cite{surreal} and later adopted by Unity-based
-generators~\cite{peoplesanspeople}---provides a scalable alternative to
+absent. Simulation-based ground truth collection (pioneered by
+SURREAL~\cite{surreal} and extended by Unity-based
+generators~\cite{peoplesanspeople}) provides a scalable alternative to
 physical motion capture, permitting fully controlled camera placement across
 arbitrary viewpoints without additional instrumentation.
 
 A fundamental challenge for any monocular 3-D pose estimator is depth
 ambiguity: a single 2-D image projection does not uniquely determine 3-D
 joint positions, and estimation accuracy depends strongly on the training-data
-viewpoint distribution~\cite{mehta2017}. Models trained primarily on
-near-frontal, standing or walking poses (COCO~\cite{coco} and similar
-large-scale benchmarks) embed a strong frontal prior that degrades generalisation
-to lateral and overhead cameras. This study directly tests this hypothesis
-across 505 camera positions and additionally identifies a systematic
-Y-axis coordinate mismatch between Unity and MediaPipe that, if uncorrected,
-yields spuriously large mean $|\Delta\theta|$ for proximal joints (e.g.,
-$\approx121^{\circ}$ for elbows before $y \leftarrow -y$).
+viewpoint distribution~\cite{mehta2017}. Photo-centric public datasets such as
+COCO~\cite{coco} contain diverse poses per instance, yet standing- or
+walking-like postures together with near-frontal camera viewpoints are
+\emph{relatively} common and are often discussed as biasing learned models
+toward frontal viewpoints, which \emph{may} impair generalisation to lateral and
+overhead cameras.
+We examine this hypothesis across 505 camera positions and additionally
+identify a systematic Y-axis coordinate mismatch between Unity and MediaPipe
+that, if uncorrected, yields spuriously large mean $|\Delta\theta|$ for
+proximal joints (e.g., $\approx121^{\circ}$ for elbows before
+$y \leftarrow -y$).
 
 The contributions of this paper are as follows:
 \begin{enumerate}\itemsep0pt
@@ -156,8 +169,8 @@ The contributions of this paper are as follows:
         $y \leftarrow -y$.
   \item \textbf{Direction angle metrics}: We introduce $\Delta\theta$ and
         $\Delta\psi$ as bias-sensitive metrics complementary to joint angle
-        MAE; these metrics reveal structured error patterns---particularly
-        the pelvic artefact---that aggregate MAE conceals.
+        MAE; these metrics reveal structured error patterns (in particular the
+        pelvic artefact) that aggregate MAE conceals.
   \item \textbf{Large-scale multi-viewpoint dataset}: 505 camera positions
         $\times$ 107 frames yield 259,356 observations covering extreme
         lateral and overhead viewpoints absent from standard benchmarks,
@@ -212,9 +225,9 @@ COCO-format keypoint annotations; pre-training on PeopleSansPeople data and
 fine-tuning on real COCO images achieves keypoint AP of 63.5, surpassing a
 real-data-only baseline of 62.0~AP in the high-data regime. Our study
 similarly exploits a Unity simulation environment to record exact per-frame
-3-D joint coordinates from 505 systematically placed cameras---a viewpoint
+3-D joint coordinates from 505 systematically placed cameras (a viewpoint
 sweep that physical motion-capture installations cannot economically
-reproduce.
+reproduce).
 
 \subsection{Monocular 3D Pose Estimation and Depth Ambiguity}
 
@@ -226,11 +239,11 @@ MPI-INF-3DHP benchmark, which includes greater viewpoint diversity than
 standard pose benchmarks; nevertheless, lateral and overhead perspectives
 remain under-represented in training corpora.
 
-Public datasets such as COCO~\cite{coco} are dominated by near-frontal,
-standing or walking poses, embedding a strong frontal viewpoint prior in
-learned models. This bias causes accuracy to
-degrade for cameras positioned laterally or overhead---a pattern our
-multi-height evaluation confirms quantitatively (Table~\ref{tab:mae_by_layer}).
+Public datasets such as COCO~\cite{coco} are widely discussed as skewing
+toward near-frontal viewpoints and standing- or walking-like poses, which
+\emph{may} embed a frontal prior in learned models and \emph{may} reduce
+accuracy for lateral or overhead cameras; our multi-height evaluation
+quantifies this tendency (Table~\ref{tab:mae_by_layer}).
 Beyond viewpoint bias, MediaPipe's skeleton model represents the pelvis as a
 simple line segment connecting landmarks~23 (left hip) and~24 (right hip),
 without a rigid multi-segment structure. A small horizontal pixel offset in
@@ -257,8 +270,8 @@ hard constraint: the pelvis is typically modelled as a single segment or
 handled implicitly through temporal consistency. The hip anti-correlation
 ($r=-0.840$) observed in our data suggests that constraining left- and
 right-hip depth to be mutually consistent under a rigid pelvic model could
-substantially reduce depth errors for walking motions---a direction we
-recommend for future model design.
+substantially reduce depth errors for walking motions (a direction we
+recommend for future model design).
 
 % ============================================================
 % 3. EXPERIMENTAL METHOD  (target: ~1.5 pages)
@@ -307,7 +320,7 @@ natural joint-angle variation across frames.
   \vspace{0.3em}
   \includegraphics[width=\linewidth]{figs/fig02b_frame_sample.jpg}
   \caption{Unity experiment environment (top) and a representative captured
-    frame (bottom).}
+    frame (bottom; camera at $Y{=}0.5$\,m, $X{=}{-}1.0$\,m, $Z{=}{-}3.0$\,m).}
   \label{fig:unity_env}
 \end{figure}
 
@@ -323,9 +336,13 @@ sequence.
 
 \subsection{Data Collection}
 
+The Unity simulation ran at 30\,fps; 107 frames were uniformly sampled from
+the walking cycle for analysis.
 Joint coordinates (GT) were exported per frame in CSV format using Unity's
-\texttt{HumanBodyBones} API~\cite{unity}. MediaPipe's Pose Landmarker
-(\texttt{model\_complexity=1}, \texttt{static\_image\_mode=True},
+\texttt{HumanBodyBones} API~\cite{unity}.
+MediaPipe's Pose Landmarker (Python package \texttt{mediapipe} 0.10,
+Solutions API; \texttt{model\_complexity=1},
+\texttt{static\_image\_mode=True},
 \texttt{min\_detection\_confidence=0.5}) was applied to each saved image to
 extract 3-D coordinates for 33 landmarks. Landmarks with a visibility score
 below 0.5 were excluded from analysis to limit the effect of heavy
@@ -342,11 +359,12 @@ The flexion angle at each joint was computed from three anatomical points:
 upper arm--elbow--forearm for the elbow; thigh--knee--lower leg for the knee;
 and equivalent triplets for shoulder and hip. The angle $\alpha$ at the
 vertex between the two vectors was computed as
-\[
+\begin{equation}
   \alpha = \arccos\!\left(\frac{\mathbf{u}\cdot\mathbf{v}}
                                {\|\mathbf{u}\|\,\|\mathbf{v}\|}\right),
   \quad \alpha \in [0^{\circ},\,180^{\circ}].
-\]
+  \label{eq:joint_angle}
+\end{equation}
 The mean absolute difference between GT and MediaPipe angles over all valid
 frames and cameras gives the MAE for each joint.
 
@@ -355,10 +373,11 @@ frames and cameras gives the MAE for each joint.
 Following the BlazePose output specification~\cite{blazepose}, relative
 joint positions are expressed with the hip midpoint as origin. In this
 hip-centred coordinate system we define
-\[
+\begin{equation}
   \theta = \mathrm{arctan2}(y,\,x), \quad
   \psi   = \mathrm{arctan2}(z,\,x),
-\]
+  \label{eq:direction_angles}
+\end{equation}
 where $(x,y,z)$ is the joint position relative to the hip centre.
 The angular errors $\Delta\theta$ and $\Delta\psi$ are the signed
 differences between GT and MediaPipe values, normalised to
@@ -370,12 +389,10 @@ Unity uses a left-handed coordinate system with Y-axis pointing
 upward, whereas MediaPipe's \texttt{pose\_landmarks} uses an image
 coordinate system with Y-axis pointing downward. This discrepancy
 introduces a systematic sign flip in $\theta = \mathrm{arctan2}(y,x)$.
-Before computing direction angle errors we applied the transformation
-\[
-  y_{\text{MediaPipe}}^{\text{unified}} = -y_{\text{MediaPipe}},
-\]
-implemented in
-\texttt{06\_direction\_detection/scripts/coordinate\_transform.py}.
+We therefore negate the MediaPipe $y$ coordinate (in practice,
+$y \leftarrow -y$) to align with Unity's upward $Y$.
+The procedure is implemented in
+\path{05_direction_detection/scripts/coordinate_transform.py}.
 All direction angle results and inter-joint correlation analyses reported
 below use coordinates after this unification.
 
@@ -383,67 +400,94 @@ below use coordinates after this unification.
 
 Table~\ref{tab:repro_pipeline} lists the main repository paths used to
 regenerate figures and statistics. MediaPipe inference used
-\texttt{model\_complexity=1}, \texttt{static\_image\_mode=True},
-\texttt{min\_detection\_confidence=0.5}; landmarks with visibility
-$<\!0.5$ were dropped before joint-wise analysis. Ground-truth joint
-positions were exported from Unity (\texttt{HumanBodyBones}); the
-Y-axis unification for direction angles is implemented in
-\texttt{06\_direction\_detection/scripts/coordinate\_transform.py}.
-Joint-angle MAE aggregates are produced from
-\texttt{04\_mae\_heatmap/coordinate\_angle\_mae.csv} (and layer splits
-under \texttt{04\_mae\_heatmap/}); direction-angle summaries and
-correlations from
-\texttt{06\_direction\_detection/output/processed\_data/joint\_summary.csv},
-\texttt{detailed\_results.csv}, and
-\texttt{06\_direction\_detection/output/correlation\_analysis/}; per-frame
-best/worst-camera statistics from
-\texttt{frame\_camera\_summary.csv} in the same processed-data folder.
+\path{model_complexity=1}, \path{static_image_mode=True},
+\path{min_detection_confidence=0.5}; landmarks with visibility below $0.5$
+were dropped before joint-wise analysis. Ground-truth joint positions were
+exported from Unity (\path{HumanBodyBones}). Joint-angle MAE aggregates are
+obtained by concatenating \path{coordinate_angle_mae.csv} from
+\path{03_joint_angle_mae/Y=0.5/} through \path{Y=2.0/}; direction-angle
+summaries and correlations use
+\path{05_direction_detection/output/processed_data/} and
+\path{05_direction_detection/output/correlation_analysis/}
+(\path{joint_summary.csv}, \path{detailed_results.csv}, etc.); per-frame
+best/worst-camera statistics come from \path{frame_camera_summary.csv}.
 
 \begin{table}[!t]
 \centering
-\caption{Primary scripts and CSV outputs for reproducing reported numbers.}
+\caption{Primary scripts and CSV outputs for reproducing reported numbers
+  (paths relative to the analysis repository root).}
 \label{tab:repro_pipeline}
 \footnotesize
-\begin{tabular}{ll}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.28\linewidth}>{\raggedright\arraybackslash}p{0.62\linewidth}}
 \toprule
-Stage & Path (under repository root unless noted) \\
+Stage & Path \\
 \midrule
-Y-axis unification & \texttt{06\_direction\_detection/scripts/coordinate\_transform.py} \\
-Joint-angle MAE & \texttt{04\_mae\_heatmap/coordinate\_angle\_mae.csv} \\
-Direction-angle stats & \texttt{06\_direction\_detection/output/processed\_data/joint\_summary.csv} \\
-Hip detailed stats & \texttt{06\_direction\_detection/output/processed\_data/detailed\_results.csv} \\
-Correlation tables & \texttt{06\_direction\_detection/output/correlation\_analysis/*.csv} \\
-Camera best/worst $|\Delta\theta|$ & \texttt{.../processed\_data/frame\_camera\_summary.csv} \\
+Y-axis unification & \path{05_direction_detection/scripts/coordinate_transform.py} \\
+Joint-angle MAE & \path{03_joint_angle_mae/Y=0.5/}--\path{Y=2.0/} (each \path{coordinate_angle_mae.csv}, four layers) \\
+Direction-angle stats & \path{05_direction_detection/output/processed_data/joint_summary.csv} \\
+Hip detailed stats & \path{05_direction_detection/output/processed_data/detailed_results.csv} \\
+Correlation tables & \path{05_direction_detection/output/correlation_analysis/*.csv} \\
+Camera best/worst $|\Delta\theta|$ & \path{05_direction_detection/output/processed_data/frame_camera_summary.csv} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
+\noindent\textbf{Public repositories.}
+The Unity capture project is at
+\url{https://github.com/MASHMARO2718/bias_evaluation_mediapipe_unity_enenvironment};
+analysis scripts for the numbers and figures in this paper are at
+\url{https://github.com/MASHMARO2718/bias_evalutation_mediapipe_unity_ieej2026}
+(Table~\ref{tab:repro_pipeline} uses paths under the latter root).
+Processed MediaPipe \path{CapturedFrames_*.csv} archives (expand under
+\path{02_mediapipe_processed/}) are cited as~\cite{zenodo_mp_csv}.
+
 \subsubsection{Statistical analysis}
 
-Pearson correlations in Tables~\ref{tab:correlation_theta}
-and~\ref{tab:correlation_psi} are computed over pooled
-frame--camera--joint observations ($n>21{,}000$ for each reported pair);
-two-sided tests of $H_0:\rho=0$ are summarised as $p<0.001$ in the table
-captions. Approximate 95\% confidence intervals for $\rho$ use the
-Fisher $z$ transformation,
-$z=\mathrm{arctanh}(r)$ with
-$\mathrm{SE}(z)\approx 1/\sqrt{n-3}$---because $n$ is large, intervals
-are narrow (Table~\ref{tab:bias_claim_evidence}).
+Pearson correlation coefficients $r$ in Tables~\ref{tab:correlation_theta}
+and~\ref{tab:correlation_psi} summarise \emph{linear} co-variation between
+paired columns of pooled errors (e.g.\ $\Delta\psi_{\mathrm{L}}$ and
+$\Delta\psi_{\mathrm{R}}$ for the same frame and camera). For paired
+observations $(x_i,y_i)$, $i=1,\ldots,n$,
+\begin{equation}
+  r=\frac{\sum_{i=1}^{n}(x_i-\bar{x})(y_i-\bar{y})}
+         {\sqrt{\sum_{i=1}^{n}(x_i-\bar{x})^2}\,\sqrt{\sum_{i=1}^{n}(y_i-\bar{y})^2}},
+  \qquad -1\le r\le 1.
+  \label{eq:pearson_r}
+\end{equation}
+Here $n$ is the number of pooled rows (each joint pair satisfies
+$n>21{,}000$). Two-sided tests of $H_0:\rho=0$ are summarised as
+$p<0.001$ in the table captions.
+
+The \textbf{SD} in Table~\ref{tab:direction_angle_error} is the sample
+standard deviation of one error type for one joint over $n$ pooled
+observations $e_1,\ldots,e_n$:
+$\mathrm{SD}=\sqrt{\frac{1}{n-1}\sum_{i=1}^{n}(e_i-\bar{e})^2}$
+(means and SDs are computed per joint; coupling between joints is reported
+separately via~$r$).
+
+Approximate 95\% confidence intervals for the population correlation
+$\rho$ use Fisher's $z=\mathrm{arctanh}(r)$ with
+$\mathrm{SE}(z)\approx 1/\sqrt{n-3}$ (large-sample normal approximation for
+$z$ with mean $\mathrm{arctanh}(\rho)$ and variance $1/(n-3)$). This
+\textbf{SE} gauges uncertainty in inferring $\rho$ from the sample~$r$ and
+differs from the SD of angular errors above. Because $n$ is large, intervals
+are narrow even for $|r|\approx 0.8$ (Table~\ref{tab:bias_claim_evidence}).
+
 For joint-angle MAE across camera height layers
 (Table~\ref{tab:mae_by_layer}), we report descriptive means per layer;
-formal omnibus tests (e.g., repeated-measures or clustered
-non-parametric comparisons across layers) are not central to the
-bias-characterisation goal here but should accompany any claim of
-``statistically significant layer differences'' in follow-on work.
+formal omnibus tests (e.g., repeated-measures or clustered non-parametric
+comparisons across layers) are not central to the bias-characterisation
+goal here but should accompany any claim of ``statistically significant
+layer differences'' in follow-on work.
 
 \begin{figure}[!t]
 \centering
 \includegraphics[width=\linewidth]{figs/fig03_concept_metrics.png}
-\caption{Concept diagram of the two evaluation metrics. Left: joint angle
-  (MAE) --- flexion angle of three points ($0$--$180^{\circ}$). Right: direction
-  angle ($\Delta\theta$, $\Delta\psi$) --- angular offset relative to the
-  hip centre ($-180^{\circ}$ to $+180^{\circ}$). The figure is a simplified schematic;
-  the actual analysis uses all 33 MediaPipe landmarks~\cite{blazepose}.}
+\caption{\emph{Simplified} schematic of the two evaluation metrics (for
+  geometry intuition only). Left: joint angle (MAE); flexion from three
+  points ($0$--$180^{\circ}$). Right: direction angles ($\Delta\theta$,
+  $\Delta\psi$); offsets relative to the hip centre
+  ($-180^{\circ}$ to $+180^{\circ}$).}
 \label{fig:concept_metrics}
 \end{figure}
 
@@ -466,7 +510,7 @@ width $\ll 0.02$ for $|r|\approx 0.8$).
   statistical notes ($n\approx 2.2\times 10^{4}$ per correlation pair).}
 \label{tab:bias_claim_evidence}
 \footnotesize
-\begin{tabular}{p{0.19\textwidth} p{0.21\textwidth} p{0.26\textwidth} p{0.28\textwidth}}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.19\textwidth} >{\raggedright\arraybackslash}p{0.21\textwidth} >{\raggedright\arraybackslash}p{0.26\textwidth} >{\raggedright\arraybackslash}p{0.28\textwidth}}
 \toprule
 Bias claim & Primary evidence & Illustrative effect size & Significance / CI \\
 \midrule
@@ -506,7 +550,8 @@ numerical detail is left to the table.
 \begin{table}[!t]
 \centering
 \caption{Statistics of joint angle error (Joint Angle MAE, degrees).
-  Source: \texttt{04\_mae\_heatmap/coordinate\_angle\_mae.csv}.}
+  Source: \texttt{coordinate\_angle\_mae.csv} (under \texttt{03\_joint\_angle\_mae},
+  combined across four camera height layers).}
 \label{tab:joint_angle_error}
 \begin{tabular}{lccc}
 \toprule
@@ -538,10 +583,9 @@ statistics for all 12 joints after coordinate system unification.
 \begin{table}[!t]
 \centering
 \caption{Direction angle error statistics after coordinate unification
-  (degrees; absolute-value means). Source:
-  \texttt{06\_direction\_detection/output/processed\_data/joint\_summary.csv}.
-  $^\ddagger$Hip values computed from \texttt{detailed\_results.csv}
-  ($n=21{,}613$ per hip joint) as Hip is excluded from \texttt{joint\_summary.csv}.}
+  (degrees; absolute-value means). Source: processed joint-summary CSV.
+  $^\ddagger$Hip values are computed from detailed results
+  ($n=21{,}613$ per hip joint) because hip rows are omitted from the joint summary.}
 \label{tab:direction_angle_error}
 \small
 \begin{tabular}{lcccc}
@@ -633,7 +677,7 @@ elbow across three height layers.
   \caption{Joint angle MAE heatmaps for the left elbow at three camera
     height layers. Error increases at Y=2.0 (overhead), consistent with
     training-data viewpoint bias. Source:
-    \texttt{04\_mae\_heatmap/}.}
+    \texttt{03\_joint\_angle\_mae/} (per-layer \texttt{coordinate\_angle\_mae.csv}).}
   \label{fig:mae_layer_compare}
 \end{figure*}
 
@@ -643,15 +687,15 @@ elbow across three height layers.
   \caption{Joint angle MAE by camera height layer (Y = 0.5, 1.0, 1.5, 2.0\,m).
     Error increases consistently at Y\,=\,2.0 for all joints, with the largest
     degradation at the hip (\(+4.7^{\circ}\) for right hip vs.\ Y\,=\,1.0).
-    Source: \texttt{4\_MAE\_HEATMAP/}.}
+    Source: \texttt{03\_joint\_angle\_mae/} (per-layer \texttt{coordinate\_angle\_mae.csv}).}
   \label{fig:mae_layer_bar}
 \end{figure}
 
 \begin{table}[!t]
 \centering
 \caption{Joint angle MAE (deg) by camera height layer.
-  Source: \texttt{04\_mae\_heatmap/Y=0.5,1.5/} and
-  \texttt{04\_mae\_heatmap/Y=1.0.2.0/coordinate\_angle\_mae.csv}.}
+  Source: \texttt{03\_joint\_angle\_mae/Y=0.5/}--\texttt{Y=2.0/}
+  \texttt{coordinate\_angle\_mae.csv} (four layers).}
 \label{tab:mae_by_layer}
 \small
 \begin{tabular}{lcccc}
@@ -679,7 +723,9 @@ respectively.
 \begin{table}[!t]
 \centering
 \caption{High-correlation joint pairs in XY plane ($\Delta\theta$; $|r|>0.7$).
-  All pairs: $p<0.001$ ($n>21{,}000$ frame--camera observations).}
+  All pairs: $p<0.001$ vs.\ $H_0:\rho=0$ (two-sided; $n>21{,}000$
+  frame--camera observations). Approximate 95\% CIs for $\rho$ (Fisher $z$)
+  are extremely narrow.}
 \label{tab:correlation_theta}
 \small
 \begin{tabular}{llr}
@@ -698,7 +744,9 @@ RIGHT\_ELBOW   & RIGHT\_SHOULDER&  $0.710$ \\
 \begin{table}[!t]
 \centering
 \caption{High-correlation joint pairs in XZ plane ($\Delta\psi$; $|r|>0.7$).
-  All pairs: $p<0.001$ ($n>21{,}000$ frame--camera observations).}
+  All pairs: $p<0.001$ vs.\ $H_0:\rho=0$ (two-sided; $n>21{,}000$
+  frame--camera observations). Approximate 95\% CIs for $\rho$ (Fisher $z$)
+  are extremely narrow.}
 \label{tab:correlation_psi}
 \small
 \begin{tabular}{llr}
@@ -739,14 +787,14 @@ correlation matrices.
   \caption{Correlation matrices of inter-joint direction angle errors.
     (a)~$\Delta\theta$ corresponds to Table~\ref{tab:correlation_theta};
     (b)~$\Delta\psi$ corresponds to Table~\ref{tab:correlation_psi}.
-    Source: \texttt{06\_direction\_detection/output/correlation\_analysis/}.}
+    Source: \texttt{05\_direction\_detection/output/correlation\_analysis/}.}
   \label{fig:correlation_heatmaps}
 \end{figure*}
 
 \subsection{3-D Position Error (MPJPE)}
 
 As a supplementary positional metric, we compute the Mean Per-Joint
-Position Error (MPJPE)---the Euclidean distance between estimated and
+Position Error (MPJPE), i.e.\ the Euclidean distance between estimated and
 ground-truth 3-D landmark positions in MediaPipe world coordinate space
 (units approximately equal to metres for a 1.7\,m subject).
 The overall mean across all 12 joints is $0.363$\,m.
@@ -757,6 +805,8 @@ ankle ($0.71$\,m), wrist ($0.36$--$0.40$\,m), and elbow
 The large ankle error primarily reflects depth-axis uncertainty in
 monocular lifting: ankle depth is estimated relative to the hip origin
 with no additional geometric constraint.
+Positional errors also accumulate along the kinematic chain from the
+hip-centred root toward distal joints, compounding distal uncertainty.
 These values are consistent with the known difficulty of monocular 3-D
 pose estimation and the absence of multi-view fusion in MediaPipe.
 
@@ -766,7 +816,7 @@ pose estimation and the absence of multi-view fusion in MediaPipe.
 To characterise viewpoint dependence, we identified for each of the
 107 frames the camera with the lowest and highest mean $|\Delta\theta|$
 across joints (computed from
-\texttt{06\_direction\_detection/output/processed\_data/frame\_camera\_summary.csv},
+\path{05_direction_detection/output/processed_data/frame_camera_summary.csv},
 107 frames $\times$ 201 cameras per frame).
 The \emph{best} camera per frame averages $|\Delta\theta|=8.8^{\circ}$ over frames
 (per-frame minima and maxima: $6.1^{\circ}$ and $15.8^{\circ}$).
@@ -800,7 +850,7 @@ large estimation variance that partially masks the systematic sign error.
 \centering
 \caption{Effect of Y-axis coordinate unification: mean $|\Delta\theta|$ (deg)
   before and after applying $y \leftarrow -y$ to MediaPipe coordinates.
-  Source: \texttt{06\_direction\_detection} exports (before vs.\ after
+  Source: \texttt{05\_direction\_detection} exports (before vs.\ after
   applying \texttt{coordinate\_transform.py}; see Sec.~3.4).}
 \label{tab:yflip_effect}
 \small
@@ -835,16 +885,16 @@ anatomical constraints such as bone-length consistency or pelvic
 rigidity. The mean $|\Delta\theta|$ for elbow joints after coordinate
 unification remains $\approx58^{\circ}$, indicating a persistent directional bias.
 
-Many pose estimation models, including MediaPipe, are trained on public
-datasets such as COCO~\cite{coco} in which everyday, near-frontal,
-standing/walking poses dominate. The arm-at-side
-prior embedded in these datasets likely biases the elbow direction estimate
+Many pose estimation models, including MediaPipe, are trained on corpora
+such as COCO~\cite{coco} that are often described as skewing toward everyday,
+near-frontal, standing- or walking-like poses, which can bias elbow direction
 toward a downward-hanging posture. The opposite-sign pattern in left vs.\
 right elbow errors ($r=-0.862$) is \emph{consistent with} left--right flip
 data augmentation commonly used in pose-model training (we do not have access
-to proprietary MediaPipe training details); the standard deviation of elbow $\Delta\theta$
-($\approx23$--$25^{\circ}$) is small enough that the bias is relatively
-predictable and correctable by post-processing.
+to proprietary MediaPipe training details). The sample SD of elbow
+$\Delta\theta$ ($\approx23$--$25^{\circ}$) is small relative to the mean
+bias, suggesting that the residual systematic error is comparatively
+predictable and amenable to post-processing.
 
 \subsection{Left-Right Symmetric Hip Depth Error}
 
@@ -881,8 +931,9 @@ The statistics in Section~\ref{subsec:camera_dep} (nine-fold mean
 $|\Delta\theta|$ gap between best and worst cameras) and the elevated MAE at
 Y\,=\,2.0\,m in Table~\ref{tab:mae_by_layer} jointly support the interpretation
 that BlazePose training data (primarily COCO~\cite{coco} and fitness-style
-recordings~\cite{blazepose}) is dominated by frontal and near-frontal views,
-with lateral and top-down cameras underrepresented.
+recordings~\cite{blazepose}) tends to emphasise frontal and near-frontal
+views, with lateral and top-down cameras relatively underrepresented, an
+interpretation consistent with our layered MAE pattern.
 
 \subsection{Practical Implications}
 
@@ -892,8 +943,8 @@ For applications where relative joint angles in the image plane suffice
 (e.g., stroke-count analysis in swimming, gross-motor rehabilitation
 screening) MediaPipe is adequate. For applications requiring 3-D body
 orientation (e.g., gait analysis, ergonomic risk assessment of torso
-rotation) the systematic biases identified here---particularly in hip
-$\Delta\psi$ and elbow $\Delta\theta$---must be compensated.
+rotation) the systematic biases identified here (in particular hip
+$\Delta\psi$ and elbow $\Delta\theta$) must be compensated.
 
 \paragraph{Deployment checklist (informal).}
 \textbf{Camera placement:} prefer near-frontal, eye-level views when
@@ -912,8 +963,8 @@ drives the application logic.
 Limitations are grouped by how strongly they constrain interpretation:
 \begin{itemize}\itemsep2pt
   \item \textbf{Avatar and appearance (high impact on transfer to humans):}
-        Y-Bot with uniform materials---no soft-tissue or clothing
-        artefacts. Conclusions on \emph{magnitude} of pixel-level jitter
+        Y-Bot with uniform materials (no soft-tissue or clothing
+        artefacts). Conclusions on \emph{magnitude} of pixel-level jitter
         and segmentation errors may shift on real humans, whereas
         coordinate-convention and monocular-depth issues are expected to
         persist qualitatively.
@@ -928,7 +979,7 @@ Limitations are grouped by how strongly they constrain interpretation:
   \item \textbf{Single estimator (scope boundary):}
         Numbers are MediaPipe-specific; alternative monocular estimators
         need their own calibration but can reuse the evaluation protocol
-        (Sec.~3.3--3.4, Table~\ref{tab:repro_pipeline}).
+        (Sec.~3.4 and Table~\ref{tab:repro_pipeline}).
 \end{itemize}
 
 % ============================================================
@@ -936,28 +987,21 @@ Limitations are grouped by how strongly they constrain interpretation:
 % ============================================================
 \section{Conclusion}
 
-We presented a large-scale multi-viewpoint evaluation of MediaPipe pose
-estimation using a Unity simulation environment. The key findings are:
-\begin{itemize}\itemsep2pt
-  \item Joint-wise MAE and the Y-layer trend (including overhead degradation)
-        are consolidated in Tables~\ref{tab:joint_angle_error}
-        and~\ref{tab:mae_by_layer}.
-  \item Coordinate unification ($y \leftarrow -y$) substantially reduces
-        $|\Delta\theta|$ for several joints; magnitudes appear in
-        Table~\ref{tab:yflip_effect}.
-  \item Residual elbow $|\Delta\theta|$ is systematic with moderate SD,
-        leaving room for post-processing (Section~5).
-  \item Hip $|\Delta\psi|$ and its strong negative correlation indicate
-        missing pelvic rigidity (Section~5; Table~\ref{tab:correlation_psi}).
-  \item Upper-limb error coupling suggests hierarchical propagation
-        (Tables~\ref{tab:correlation_theta}--\ref{tab:correlation_psi}).
-\end{itemize}
+Unity simulation with 505 multi-view cameras quantified systematic biases in
+MediaPipe pose estimation. Joint MAE and layer-wise viewpoint dependence are
+summarised in Tables~\ref{tab:joint_angle_error} and~\ref{tab:mae_by_layer};
+the effect of $y \leftarrow -y$ appears in Table~\ref{tab:yflip_effect};
+interpretation of hip $\Delta\psi$ anti-correlation, upper-limb coupling, and
+residual elbow error is given in Section~5 and
+Tables~\ref{tab:correlation_theta}--\ref{tab:correlation_psi}.
+The reported statistics describe behaviour under this synthetic, reproducible
+GT setup; extrapolation to real subjects and in-the-wild video requires
+separate validation. The quantification nevertheless supplies actionable
+structure (viewpoint imbalance, coordinate conventions) for deployment design
+and for ancillary, bias-aware use of pose outputs.
 
-Future directions include: (1)~incorporating pelvic rigidity constraints
-into pose estimation models; (2)~fine-tuning on multi-viewpoint data
-collected from diverse angles; (3)~extending the evaluation framework to
-other estimators and motion types; and (4)~developing application-specific
-correction filters for elbow and hip errors.
+Future work should address pelvic rigidity constraints, learning from
+multi-view data, and porting the protocol to other estimators.
 
 % ============================================================
 
@@ -970,84 +1014,82 @@ Campus Initiative).
 
 \begin{thebibliography}{99}
 
+\bibitem{zenodo_mp_csv}
+F.~Taira: ``MediaPipe processed pose CSVs'', Zenodo, dataset,
+\url{https://doi.org/10.5281/zenodo.19296530} (Mar.~2026)
+
 % --- Original 3 references (kept from paper_en.md) ----------
 \bibitem{mediapipe}
-Google LLC, ``MediaPipe Pose Landmarker,''
-\url{https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker},
-2024.
+Google LLC: ``MediaPipe Pose Landmarker'',
+\url{https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker}
+(2024)
 
 \bibitem{mediapipe_coord_issue}
-Google, ``Orientation of pose world landmarks,''
-GitHub Issue \#3370, MediaPipe repository, 2022.
-\url{https://github.com/google/mediapipe/issues/3370}
+Google: ``Orientation of pose world landmarks'', GitHub Issue \#3370,
+MediaPipe repository,
+\url{https://github.com/google/mediapipe/issues/3370} (2022)
 
 \bibitem{blazepose}
 V.~Bazarevsky, I.~Grishchenko, K.~Raveendran, T.~Zhu, F.~Zhang,
-and M.~Grundmann,
-``BlazePose: On-device real-time body pose tracking,''
-\textit{arXiv preprint arXiv:2006.10204}, 2020.
+and M.~Grundmann: ``BlazePose: On-device real-time body pose tracking'',
+\textit{arXiv preprint arXiv:2006.10204} (2020)
 
 \bibitem{unity}
-Unity Technologies, ``HumanBodyBones,''
-\textit{Unity Scripting Reference}, 2024,
-\url{https://docs.unity3d.com/ScriptReference/HumanBodyBones.html}.
+Unity Technologies: ``HumanBodyBones'', \textit{Unity Scripting Reference},
+\url{https://docs.unity3d.com/ScriptReference/HumanBodyBones.html} (2024)
 
 \bibitem{coco}
-T.-Y.~Lin et al.,
-``Microsoft COCO: Common Objects in Context,''
-in \textit{Proc. ECCV}, 2014, pp.~740--755.
+T.-Y.~Lin, M.~Maire, S.~Belongie, J.~Hays, P.~Perona, D.~Ramanan,
+P.~Dollár, and C.~L.~Zitnick:
+``Microsoft COCO: Common Objects in Context'',
+in \textit{Proc. ECCV}, pp.~740--755 (2014)
 
 \bibitem{openpose}
-Z.~Cao, G.~Hidalgo, T.~Simon, S.-E.~Wei, and Y.~Sheikh,
+Z.~Cao, G.~Hidalgo, T.~Simon, S.-E.~Wei, and Y.~Sheikh:
 ``OpenPose: Realtime Multi-Person 2D Pose Estimation Using Part Affinity
-Fields,''
-\textit{IEEE Trans. Pattern Anal. Mach. Intell.}, vol.~43, no.~1,
-pp.~172--186, 2021.
+Fields'', \textit{IEEE Trans. Pattern Anal. Mach. Intell.}, Vol.~43,
+No.~1, pp.~172--186 (2021)
 
 % --- Synthetic / simulation-based GT datasets ----------------------
 \bibitem{surreal}
 G.~Varol, J.~Romero, X.~Martin, N.~Mahmood, M.~J.~Black, I.~Laptev,
-and C.~Schmid,
-``Learning from synthetic humans,''
-in \textit{Proc. CVPR}, 2017, pp.~109--117.
+and C.~Schmid: ``Learning from synthetic humans'',
+in \textit{Proc. CVPR}, pp.~109--117 (2017)
 
 \bibitem{agora}
 P.~Patel, C.-H.~P.~Huang, J.~Tesch, D.~T.~Hoffmann, S.~Tripathi,
-and M.~J.~Black,
-``AGORA: Avatars in geography optimized for regression analysis,''
-in \textit{Proc. CVPR}, 2021.
+and M.~J.~Black: ``AGORA: Avatars in geography optimized for regression
+analysis'', in \textit{Proc. CVPR} (2021)
 
 \bibitem{peoplesanspeople}
-S.~E.~Ebadi et al.,
-``PeopleSansPeople: A synthetic data generator for human-centric
-computer vision,''
-\textit{arXiv preprint arXiv:2112.09290}, 2021.
+S.~E.~Ebadi, Y.-C.~Jhang, A.~Zook, S.~Dhakad, A.~Crespi, P.~Parisi,
+S.~Borkman, J.~Hogins, and S.~Ganguly:
+``PeopleSansPeople: A synthetic data generator for human-centric computer
+vision'', \textit{arXiv preprint arXiv:2112.09290} (2021)
 
 % --- Monocular 3D pose estimation / depth ambiguity ----------------
 \bibitem{mehta2017}
 D.~Mehta, H.~Rhodin, D.~Casas, P.~Fua, O.~Sotnychenko, W.~Xu,
-and C.~Theobalt,
-``Monocular 3D human pose estimation in the wild using improved CNN
-supervision,''
-in \textit{Proc. Int.\ Conf.\ 3D Vision (3DV)}, 2017, pp.~506--516.
-\url{https://doi.org/10.1109/3DV.2017.00064}
+and C.~Theobalt: ``Monocular 3D human pose estimation in the wild using
+improved CNN supervision'', in \textit{Proc. Int.\ Conf.\ 3D Vision (3DV)},
+pp.~506--516, \url{https://doi.org/10.1109/3DV.2017.00064} (2017)
 
 \bibitem{vnect}
-D.~Mehta et al.,
-``VNect: Real-time 3D human pose estimation with a single RGB camera,''
-\textit{ACM Trans.\ Graph.}, vol.~36, no.~4, pp.~44:1--44:14, 2017.
+D.~Mehta, S.~Sridhar, O.~Sotnychenko, H.~Rhodin, M.~Shafiei,
+H.-P.~Seidel, W.~Xu, D.~Casas, and C.~Theobalt:
+``VNect: Real-time 3D human pose estimation with a single RGB camera'',
+\textit{ACM Trans.\ Graph.}, Vol.~36, No.~4, pp.~44:1--44:14 (2017)
 
 % --- Skeletal constraint / transformer-based models ----------------
 \bibitem{poseformer}
-C.~Zheng, S.~Zhu, M.~Mendieta, T.~Yang, C.~Chen, and Z.~Ding,
-``3D human pose estimation with spatial and temporal transformers,''
-in \textit{Proc. ICCV}, 2021, pp.~11656--11666.
+C.~Zheng, S.~Zhu, M.~Mendieta, T.~Yang, C.~Chen, and Z.~Ding:
+``3D human pose estimation with spatial and temporal transformers'',
+in \textit{Proc. ICCV}, pp.~11656--11666 (2021)
 
 \bibitem{motionbert}
-W.~Zhu et al.,
+W.~Zhu, X.~Ma, Z.~Liu, L.~Liu, W.~Wu, and Y.~Wang:
 ``MotionBERT: A unified perspective on learning human motion
-representations,''
-in \textit{Proc. ICCV}, 2023.
+representations'', in \textit{Proc. ICCV} (2023)
 
 \end{thebibliography}
 
@@ -1058,8 +1100,30 @@ Second-year student, Okinawa Prefectural Kaiko High School.
 Two-stage student at Ryudai Kagaku-in under the University of the Ryukyus
 SEARCH programme, affiliated with Prof.~Tsukasa Kato's laboratory;
 engaged in motion-tracking research.}
-\profile{m}{Tsukasa Kato}{Graduate School of Education, University of the Ryukyus.}
-\profile{n}{Jin Afuso}{lollol Inc.}
+\profile{m}{Tsukasa Kato}{%
+Received the B.S. degree from Tokyo University of Fisheries
+(now Tokyo University of Marine Science and Technology) in March 1999.
+While serving at Okinawa Prefectural high schools, he completed the
+graduate program in the Department of Intelligent Information Engineering,
+University of the Ryukyus, in March 2021, and received the Ph.D. degree in
+engineering. He is currently an Associate Professor in the Professional
+Degree Program for Advanced Teacher Education, Graduate School of Education,
+University of the Ryukyus. His research interests include the development of
+video-based lessons and mobile learning systems, the development of
+technical instructional videos and evaluation of their effectiveness, and
+the educational use and application of generative AI.}
+\profile{n}{Jin Afuso}{%
+Received the B.E. degree in information engineering from the University of
+the Ryukyus in March 2004. He completed the doctoral program in the Major
+of Intelligent Information Engineering, Graduate School of Science and
+Engineering, University of the Ryukyus, in March 2013, and received the
+Ph.D. degree in engineering. In April 2013, he joined the Knowledge Media
+Laboratory, Hokkaido University, as a Project Researcher. In April 2015, he
+became an Assistant Professor by Special Appointment at the University of
+the Ryukyus Hospital. After serving from December 2017 as a Project
+Researcher in the Social Infrastructure Program, Faculty of Engineering,
+University of the Ryukyus, he is currently engaged in artificial
+intelligence research as a data scientist.}
 \end{biography}
 
 \end{document}

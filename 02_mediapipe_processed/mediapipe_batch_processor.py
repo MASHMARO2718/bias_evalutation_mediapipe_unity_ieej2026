@@ -5,7 +5,7 @@ RTX3050 GPU活用 + 進捗管理 + エラーハンドリング
 
 使用方法:
     python mediapipe_batch_processor.py --input_dir JPEG_OUTPUT --output_base_dir 02_mediapipe_processed
-    # Y=0.5,1.5 と Y=1.0.2.0 に分けて 02_mediapipe_processed/Y=0.5,1.5/*.csv 等に出力
+    # カメラ高さごとに Y=0.5, Y=1.0, Y=1.5, Y=2.0 配下へ CapturedFrames_*.csv を出力
 """
 
 import os
@@ -201,26 +201,25 @@ class MediaPipeProcessor:
         return results
     
     def _get_y_folder_from_folder(self, folder_name: str) -> str:
-        """CapturedFrames_X_Y_Z から Y を解析し、Y=0.5,1.5 または Y=1.0.2.0 を返す"""
+        """CapturedFrames_X_Y_Z からカメラ高さ Y を解析し、Y=0.5 / Y=1.0 / Y=1.5 / Y=2.0 を返す"""
         m = re.match(r'CapturedFrames_([+-]?\d+\.?\d*)_([+-]?\d+\.?\d*)_([+-]?\d+\.?\d*)', folder_name)
         if m:
             y = float(m.group(2))
-            if y in (0.5, 1.5):
-                return "Y=0.5,1.5"
-            if y in (1.0, 2.0):
-                return "Y=1.0.2.0"
-        self.logger.warning(f"Y判定失敗: {folder_name} -> Y=0.5,1.5 にフォールバック")
-        return "Y=0.5,1.5"
+            for allowed in (0.5, 1.0, 1.5, 2.0):
+                if abs(y - allowed) < 1e-6:
+                    return f"Y={allowed}"
+        self.logger.warning(f"Y判定失敗: {folder_name} -> Y=0.5 にフォールバック")
+        return "Y=0.5"
 
     def save_to_csv_by_folder(self, results: List[Dict], output_base_dir: Optional[Path] = None):
         """
-        フォルダ別にCSV形式で保存。Y範囲（Y=0.5,1.5 / Y=1.0.2.0）ごとに出力ディレクトリを分ける。
+        フォルダ別にCSV形式で保存。カメラ高さ Y（0.5, 1.0, 1.5, 2.0）ごとに出力ディレクトリを分ける。
         
         Args:
             results: 処理結果リスト
             output_base_dir: 出力ベースディレクトリ（None の場合は画像と同じ場所）
         """
-        self.logger.info("フォルダ別CSV保存開始（Y=0.5,1.5 / Y=1.0.2.0 ごとに出力）")
+        self.logger.info("フォルダ別CSV保存開始（Y=0.5, Y=1.0, Y=1.5, Y=2.0 ごとに出力）")
         
         # (y_folder, folder_name) ごとに結果をグループ化
         grouped = {}  # (y_folder, folder_name) -> [results]
@@ -267,7 +266,7 @@ class MediaPipeProcessor:
             
             self.logger.info(f"CSV保存: {csv_path}")
         
-        self.logger.info(f"全CSV保存完了: {len(grouped)}ファイル（Y=0.5,1.5 / Y=1.0.2.0別）")
+        self.logger.info(f"全CSV保存完了: {len(grouped)}ファイル（カメラ高さ Y 別）")
     
     def get_image_paths(self, input_dir: str) -> List[str]:
         """
@@ -309,7 +308,7 @@ def main():
     parser = argparse.ArgumentParser(description='MediaPipe 3D Pose Landmarker バッチ処理')
     parser.add_argument('--input_dir', required=True, help='入力画像ディレクトリ')
     default_out = Path(__file__).parent  # 02_mediapipe_processed 自体をデフォルト
-    parser.add_argument('--output_base_dir', default=str(default_out), help='Y別出力のベースディレクトリ。デフォルト: 02_mediapipe_processed（Y=0.5,1.5 / Y=1.0.2.0 配下にCSV出力）')
+    parser.add_argument('--output_base_dir', default=str(default_out), help='Y別出力のベース。デフォルト: 02_mediapipe_processed（Y=0.5, Y=1.0, Y=1.5, Y=2.0 配下）')
     parser.add_argument('--output_csv', help='出力CSVファイル（フォルダ別出力の場合は不要）')
     parser.add_argument('--num_threads', type=int, default=4, help='並列処理スレッド数')
     parser.add_argument('--max_images', type=int, help='処理する最大画像数（テスト用）')

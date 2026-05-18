@@ -16,7 +16,7 @@ pip install -r requirements.txt
 
 ### 2. データ処理
 
-**パターンA: 画像から全自動（01→09）**
+**パターンA: 画像から全自動（MediaPipe〜論文検証＋ダッシュボード）**
 
 `01_input_photos/` に次の形式で画像を置き、以下を実行:
 
@@ -44,7 +44,7 @@ python run.py --no-mediapipe
 
 → ステップ1〜5 を実行し、最後にダッシュボードを起動。`--no-dashboard` でダッシュボード起動をスキップ。
 
-**パターンC: 06 のみ＋ダッシュボード（約1分）**
+**パターンC: 方向角パイプラインのみ＋ダッシュボード（約1分、`run.py --dashboard`）**
 
 ```bash
 python run.py --dashboard
@@ -53,7 +53,7 @@ python run.py --dashboard
 ### 3. 可視化ダッシュボード
 
 ```bash
-python 08_dashboard/app.py
+python 07_dashboard/app.py
 ```
 
 ブラウザで **http://127.0.0.1:8050/** を開く。
