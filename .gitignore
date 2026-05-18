@@ -16,6 +16,12 @@
 # 写真出力ディレクトリは全て除外（サイズが大きいため）
 01_input_photos/
 
+# 誤ってリポジトリ直下に作られたカメラ高さフォルダ（正: 02_mediapipe_processed/Y=0.5/ など）
+/0.5/
+/1.0/
+/1.5/
+/2.0/
+
 # デバッグデータとログは除外
 **/debug_data/
 **/logs/
@@ -50,5 +56,11 @@ Thumbs.db
 *.log
 
 @paper
+
+# 関節角度MAE用CSV（joint_angle_mae_csv に集約。再生成・サイズ大のため追跡しない）
+03_joint_angle_mae/joint_angle_mae_csv/
+
+# 全観測の方向角詳細（再生成で得る。誤コミット防止）
+05_direction_detection/output/processed_data/detailed_results.csv
 
 

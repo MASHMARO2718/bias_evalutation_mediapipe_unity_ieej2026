@@ -10,20 +10,25 @@ ROOT = Path(__file__).parent
 
 # 削除対象ディレクトリ（パイプライン出力）
 CLEAN_DIRS = [
-    ROOT / "02_mediapipe_processed" / "Y=0.5,1.5",
-    ROOT / "02_mediapipe_processed" / "Y=1.0.2.0",
-    ROOT / "03_cal_mae" / "Y=0.5,1.5",
-    ROOT / "03_cal_mae" / "Y=1.0.2.0",
-    ROOT / "04_mae_heatmap" / "Y=0.5,1.5",
-    ROOT / "04_mae_heatmap" / "Y=1.0.2.0",
-    ROOT / "04_mae_heatmap" / "Y=1.0,2.0",
-    ROOT / "05_max_angle_error" / "calculation" / "Y=0.5,1.5",
-    ROOT / "05_max_angle_error" / "calculation" / "Y=1.0.2.0",
-    ROOT / "05_max_angle_error" / "max_angle_error_heatmap" / "Y=0.5,1.5",
-    ROOT / "05_max_angle_error" / "max_angle_error_heatmap" / "Y=1.0,2.0",
-    ROOT / "06_direction_detection" / "output",
-    ROOT / "07_theta_verification" / "output",
-    ROOT / "07_theta_verification" / "coordinate_fix_verification" / "output",
+    ROOT / "02_mediapipe_processed" / "Y=0.5",
+    ROOT / "02_mediapipe_processed" / "Y=1.0",
+    ROOT / "02_mediapipe_processed" / "Y=1.5",
+    ROOT / "02_mediapipe_processed" / "Y=2.0",
+    ROOT / "03_joint_angle_mae" / "Y=0.5",
+    ROOT / "03_joint_angle_mae" / "Y=1.0",
+    ROOT / "03_joint_angle_mae" / "Y=1.5",
+    ROOT / "03_joint_angle_mae" / "Y=2.0",
+    ROOT / "04_max_angle_error" / "calculation" / "Y=0.5",
+    ROOT / "04_max_angle_error" / "calculation" / "Y=1.0",
+    ROOT / "04_max_angle_error" / "calculation" / "Y=1.5",
+    ROOT / "04_max_angle_error" / "calculation" / "Y=2.0",
+    ROOT / "04_max_angle_error" / "max_angle_error_heatmap" / "Y=0.5",
+    ROOT / "04_max_angle_error" / "max_angle_error_heatmap" / "Y=1.0",
+    ROOT / "04_max_angle_error" / "max_angle_error_heatmap" / "Y=1.5",
+    ROOT / "04_max_angle_error" / "max_angle_error_heatmap" / "Y=2.0",
+    ROOT / "05_direction_detection" / "output",
+    ROOT / "06_theta_verification" / "output",
+    ROOT / "06_theta_verification" / "coordinate_fix_verification" / "output",
 ]
 
 # 絶対に削除しないファイル名
@@ -53,8 +58,8 @@ def main():
             deleted.append(f.relative_to(ROOT))
             print(f"削除: {f.relative_to(ROOT)}")
 
-    # 03_cal_mae 直下
-    cal_mae = ROOT / "03_cal_mae"
+    # 03_joint_angle_mae 直下（統合 CSV 等）
+    cal_mae = ROOT / "03_joint_angle_mae"
     if cal_mae.exists():
         for f in cal_mae.glob("*.csv"):
             if f.name in KEEP:

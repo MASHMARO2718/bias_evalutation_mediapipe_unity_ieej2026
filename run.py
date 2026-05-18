@@ -2,12 +2,12 @@
 """
 MotionTrack パイプライン実行
 
-初見ユーザー向け: 画像を 01_input_photos に置いて python run.py で 01→09 まで自動実行。
+初見ユーザー向け: 画像を 01_input_photos に置いて python run.py で MediaPipe〜検証まで自動実行（既定で 07_dashboard 起動）。
 
 使い方:
-  python run.py                    # 全パイプライン（01画像→09ダッシュボード）
+  python run.py                    # 全パイプライン（01画像→02 CSV→MAE/最大角/方向角→検証→07ダッシュボード）
   python run.py --no-mediapipe     # 02 以降のみ（02 が既にある場合）
-  python run.py --dashboard        # 06 のみ＋ダッシュボード起動
+  python run.py --dashboard        # ステップ4（方向角）のみ＋ダッシュボード起動
   python run.py --step 4           # 特定ステップのみ
 """
 import argparse
@@ -21,10 +21,10 @@ MP_PROCESSED = ROOT / "02_mediapipe_processed"
 
 STEPS = [
     ("0", None, "MediaPipe: 画像→CSV (01→02)", [None], "mediapipe"),  # 特別処理
-    ("1", "03_cal_mae", "3点角MAE計算", ["Y=0.5,1.5", "Y=1.0.2.0"], "run_cal_mae.py"),
-    ("2", "04_mae_heatmap", "MAE統計テーブル作成", [None], "create_statistics_table.py"),
-    ("3", "05_max_angle_error", "最大角度誤差計算", ["Y=0.5,1.5", "Y=1.0.2.0"], "run_calculate_max.py"),
-    ("4", "06_direction_detection", "方向角・相関分析", [None], None),  # 2スクリプト
+    ("1", "03_joint_angle_mae", "3点角MAE計算", ["Y=0.5", "Y=1.0", "Y=1.5", "Y=2.0"], "run_cal_mae.py"),
+    ("2", "03_joint_angle_mae", "MAE統計テーブル作成", [None], "create_statistics_table.py"),
+    ("3", "04_max_angle_error", "最大角度誤差計算", ["Y=0.5", "Y=1.0", "Y=1.5", "Y=2.0"], "run_calculate_max.py"),
+    ("4", "05_direction_detection", "方向角・相関分析", [None], None),  # 2スクリプト
     ("5", None, "論文データ検証", [None], "verify_paper_data.py"),
 ]
 
@@ -74,8 +74,8 @@ def run_step(step_num: str) -> bool:
         return run_cmd(cmd, cwd)
 
     if num == "4":
-        # 06: process_all_data + compute_correlation
-        cwd = ROOT / "06_direction_detection"
+        # 05: process_all_data + compute_correlation
+        cwd = ROOT / "05_direction_detection"
         if not run_cmd([sys.executable, "process_all_data.py"], cwd):
             return False
         if not run_cmd([sys.executable, "scripts/compute_correlation.py"], cwd):
@@ -92,7 +92,7 @@ def run_step(step_num: str) -> bool:
     for sub in subdirs:
         cwd = ROOT / folder / sub
         if num == "3":
-            cwd = ROOT / folder / "calculation" / sub  # 05_max_angle_error/calculation/Y=...
+            cwd = ROOT / folder / "calculation" / sub  # 04_max_angle_error/calculation/Y=...
         if not cwd.exists():
             print(f"スキップ（フォルダなし）: {cwd}")
             continue
@@ -103,7 +103,7 @@ def run_step(step_num: str) -> bool:
 
 def run_dashboard_only() -> bool:
     """ダッシュボード用データのみ（06の処理のみ）"""
-    print("\n=== ダッシュボード用データ生成（06_direction_detection）===")
+    print("\n=== ダッシュボード用データ生成（05_direction_detection）===")
     return run_step("4")
 
 
@@ -119,24 +119,24 @@ def run_full(skip_mediapipe: bool = False, launch_dashboard: bool = False) -> bo
     print("\n=== 全パイプライン完了 ===")
     if launch_dashboard:
         print("\n>>> ダッシュボードを起動します...")
-        return run_cmd([sys.executable, "08_dashboard/app.py"], ROOT)
+        return run_cmd([sys.executable, "07_dashboard/app.py"], ROOT)
     return True
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="MotionTrack パイプライン実行（01画像→09ダッシュボード）",
+        description="MotionTrack パイプライン実行（MediaPipe〜検証、既定で07ダッシュボード）",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 例:
   python run.py                   画像から全処理＋ダッシュボード起動
   python run.py --no-dashboard    ダッシュボードは起動しない
   python run.py --no-mediapipe   02 以降のみ（02 が既にある場合）
-  python run.py --dashboard      06 のみ＋ダッシュボード
+  python run.py --dashboard      ステップ4＋ダッシュボード
   python run.py --step 0         MediaPipe のみ
         """,
     )
-    parser.add_argument("--dashboard", action="store_true", help="06 のみ実行しダッシュボード起動")
+    parser.add_argument("--dashboard", action="store_true", help="ステップ4（方向角）のみ実行しダッシュボード起動")
     parser.add_argument("--no-mediapipe", action="store_true", help="ステップ0（MediaPipe）をスキップ")
     parser.add_argument("--no-dashboard", action="store_true", help="完了後にダッシュボードを起動しない")
     parser.add_argument("--step", metavar="N", help="ステップ番号のみ実行 (0-5)")
@@ -145,7 +145,7 @@ def main():
     if args.dashboard:
         ok = run_dashboard_only()
         if ok:
-            run_cmd([sys.executable, "08_dashboard/app.py"], ROOT)
+            run_cmd([sys.executable, "07_dashboard/app.py"], ROOT)
     elif args.step:
         ok = run_step(args.step)
     else:
