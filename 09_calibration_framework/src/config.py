@@ -14,7 +14,7 @@ from pathlib import Path
 # ──────────────────────────────────────────────
 # リポジトリルート（このファイルの2階層上がリポジトリ root）
 # ──────────────────────────────────────────────
-REPO_ROOT = Path(__file__).resolve().parents[3]   # bias_evaluation_,mediapipe_unity_ieej2026/
+REPO_ROOT = Path(__file__).resolve().parents[2]   # bias_evaluation_,mediapipe_unity_ieej2026/
 
 # ──────────────────────────────────────────────
 # 入力データパス  §4.3 Calibration 入力
