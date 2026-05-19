@@ -62,7 +62,8 @@ python run.py
 ├── 05_direction_detection/   # 方向角・相関（論文 processed 系の主出力）
 ├── 06_theta_verification/    # θ・座標系検証（run.py 対象外）
 ├── 07_dashboard/             # Dash 可視化（run.py 末尾で起動可）
-└── 08_dev/                   # 開発メモ（run.py 対象外）
+├── 08_dev/                   # 開発メモ（run.py 対象外）
+└── 09_calibration_framework/ # パラメトリック補正フレームワーク（研究提案実装）
 ```
 
 MediaPipe の CSV は **リポジトリ直下ではなく** 常に `02_mediapipe_processed/Y=0.5/` のように `Y=` 接頭辞付きフォルダへ出ます（ルートに `0.5` だけのフォルダがあれば誤配置です）。
@@ -79,6 +80,42 @@ docker compose up --build
 
 ---
 
+## 補正フレームワーク（09_calibration_framework）
+
+MediaPipe Pose の視点依存バイアスをパラメトリックに補正する研究実装です。  
+詳細: [`09_calibration_framework/README.md`](09_calibration_framework/README.md)
+
+### ダッシュボード（ブラウザで動作・Cursor 不要）
+
+```bash
+cd 09_calibration_framework/dashboard
+pip install -r requirements.txt
+python app.py
+# → http://localhost:8051
+```
+
+| タブ | 内容 |
+|---|---|
+| Overview | モデル比較・per-layer MAE・評価サマリー |
+| Bin Explorer | カメラ位置 × 方位角ビン構造のインタラクティブ可視化 |
+| Linear Model | 局所線形 R² ヒートマップ・OLS 係数 β |
+| Grid Search | ハイパーパラメータ探索結果 |
+| Bin Reference | 全ビン種別（方位角・高さ・距離）の詳細一覧 |
+
+### 補正パイプラインの実行
+
+```bash
+cd 09_calibration_framework
+python experiments/run_calibration.py   # Phase A: バイアステーブル生成
+python experiments/grid_search.py       # bin 設定の最適化（任意）
+python experiments/run_evaluation.py    # Phase B: 全モデル評価
+```
+
+出力は `09_calibration_framework/outputs/` に保存されます。  
+実行結果レポート: [`09_calibration_framework/outputs/RUN_REPORT.md`](09_calibration_framework/outputs/RUN_REPORT.md)
+
+---
+
 ## 詳細
 
 - **初見向け**: `00_quickstart/`
@@ -88,6 +125,7 @@ docker compose up --build
 - **旧パイプライン**: `run_full_pipeline.py` → `run.py` に委譲
 - **ローカル作業コピー Zeval_DataSet との対応**: `docs/ZEVAL_DATASET_LAYOUT.md`
 - **再現性・検証**: `docs/REPRODUCTION.md`、`python verify_paper_data.py`
+- **補正フレームワーク**: `09_calibration_framework/README.md`、`09_calibration_framework/CODE_REVIEW.md`
 
 ### 公開用リポジトリについて
 

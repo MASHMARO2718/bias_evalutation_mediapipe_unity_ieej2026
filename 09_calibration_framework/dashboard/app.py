@@ -285,8 +285,85 @@ def build_bin_explorer_tab():
 # ─────────────────────────────────────────────────────────────────────────────
 # Tab 3: Linear Model
 # ─────────────────────────────────────────────────────────────────────────────
+
+_LINEAR_THEORY_CARD = dbc.Accordion([
+    dbc.AccordionItem(
+        title="📐 局所線形性とは？ — 仮説・評価手順・チャートの読み方",
+        children=[
+            dbc.Row([
+                # 仮説
+                dbc.Col([
+                    html.H6("① 仮説", className="fw-bold text-primary"),
+                    html.P(
+                        "各視点ビン内では、MediaPipe の推定誤差 e = x_mp − x_gt が、"
+                        "カメラパラメータ（高さ Y・距離 D・方位角 φ）の線形関数で近似できる。",
+                        className="small mb-1",
+                    ),
+                    dbc.Badge("e ≈ β₀ + β₁Y + β₂D + β₃sin φ + β₄cos φ + β₅ε",
+                              color="secondary", className="font-monospace mb-2"),
+                    html.P(
+                        "これを「局所線形性仮説」と呼ぶ。"
+                        "全視点を一括でモデル化（グローバルモデル）すると非線形な誤差構造を捉えきれないが、"
+                        "ビンに分割することで各領域を線形に近似できる、という前提に基づく。",
+                        className="small text-muted",
+                    ),
+                ], width=4),
+                # 評価手順
+                dbc.Col([
+                    html.H6("② 評価の手順（実装との対応）", className="fw-bold text-success"),
+                    html.Ol([
+                        html.Li([html.Strong("データをビンに分割"), " — 方位角ビン × 高さビンで視点空間を離散化"],
+                                className="small mb-1"),
+                        html.Li([html.Strong("OLS 回帰（per bin × per joint）"), " — ",
+                                 html.Code("phase_a/linear_estimator.py: fit_local_linear_models()"),
+                                 " で β 係数を推定"],
+                                className="small mb-1"),
+                        html.Li([html.Strong("R² 算出"), " — 残差平方和 / 全変動から決定係数を計算。",
+                                 "R² → 1 ならビン内で線形近似が成立"],
+                                className="small mb-1"),
+                        html.Li([html.Strong("局所 vs グローバル比較"), " — 同じビンのデータを全視点一括モデルで予測した場合と比較し、"
+                                 "局所モデルの優位性を検証"],
+                                className="small mb-1"),
+                    ]),
+                ], width=4),
+                # チャートの読み方
+                dbc.Col([
+                    html.H6("③ 各チャートの見方", className="fw-bold text-warning"),
+                    dbc.Table([
+                        html.Tbody([
+                            html.Tr([
+                                html.Td(html.Strong("R² 棒グラフ"), className="small"),
+                                html.Td("全ビン平均の R²（エラーバー=min/max）。"
+                                        "関節ごとに線形近似の難易度が異なることを示す。", className="small"),
+                            ]),
+                            html.Tr([
+                                html.Td(html.Strong("R² ヒートマップ"), className="small"),
+                                html.Td("height × azimuth ビンでの R² 分布。"
+                                        "赤いセルは線形近似が不十分なビン（サンプル不足 or 非線形領域）。", className="small"),
+                            ]),
+                            html.Tr([
+                                html.Td(html.Strong("グローバル β"), className="small"),
+                                html.Td("全視点一括で推定した係数。正 = その視点変化で誤差が増加。"
+                                        "局所モデルでは各ビンごとに異なる β を持つ。", className="small"),
+                            ]),
+                            html.Tr([
+                                html.Td(html.Strong("局所 vs グローバル散布図"), className="small"),
+                                html.Td("X 軸=ビン内サンプル数、Y 軸=局所 R²。"
+                                        "R² > グローバル基準線 → 局所モデルが有効。"
+                                        "サンプル数が少ないビンは R² が不安定（要注意）。", className="small"),
+                            ]),
+                        ])
+                    ], bordered=True, size="sm"),
+                ], width=4),
+            ]),
+        ],
+    )
+], start_collapsed=True, className="mb-3")
+
+
 def build_linear_tab():
     return dbc.Container([
+        dbc.Row(dbc.Col(_LINEAR_THEORY_CARD)),
         dbc.Row([
             dbc.Col([
                 card("表示関節を選択", [
@@ -298,25 +375,30 @@ def build_linear_tab():
                 ])
             ], width=3),
             dbc.Col([
-                card("R² 全関節 × ビン統計",
+                card("R² 全関節 × ビン統計  ─  局所線形モデルのフィット品質（全ビン平均 ± min/max）",
                      dcc.Graph(id="lm-r2-bar", style={"height": "280px"},
                                config={"displayModeBar": False}))
             ], width=9),
         ]),
         dbc.Row([
-            dbc.Col(card("局所線形 R² ヒートマップ (height_bin × azimuth_bin)",
-                         dcc.Graph(id="lm-r2-heatmap", style={"height": "360px"},
-                                   config={"displayModeBar": True})),
+            dbc.Col(card(
+                "局所線形 R² ヒートマップ  ─  height_bin × azimuth_bin ごとのフィット品質"
+                "（緑=線形近似有効、赤=不十分）",
+                dcc.Graph(id="lm-r2-heatmap", style={"height": "360px"},
+                          config={"displayModeBar": True})),
                     width=6),
-            dbc.Col(card("Model 5 グローバル係数 β (選択関節)",
-                         dcc.Graph(id="lm-beta-bar", style={"height": "360px"},
-                                   config={"displayModeBar": False})),
+            dbc.Col(card(
+                "Model 5 グローバル β 係数  ─  全視点一括回帰の係数（正=誤差増加方向）",
+                dcc.Graph(id="lm-beta-bar", style={"height": "360px"},
+                          config={"displayModeBar": False})),
                     width=6),
         ]),
         dbc.Row([
-            dbc.Col(card("局所 vs グローバル R² 比較 (選択関節 × 全ビン)",
-                         dcc.Graph(id="lm-local-scatter", style={"height": "340px"},
-                                   config={"displayModeBar": True})),
+            dbc.Col(card(
+                "局所 vs グローバル R² 比較  ─  各ビンの局所 R²（X=サンプル数）。"
+                "点が基準線より上 → 局所モデルが有効",
+                dcc.Graph(id="lm-local-scatter", style={"height": "340px"},
+                          config={"displayModeBar": True})),
                     width=12),
         ]),
     ], fluid=True)
@@ -828,10 +910,16 @@ def update_r2_heatmap(joint):
         hovertemplate="height=%{y}<br>az=%{x}<br>R²=%{z:.3f}<extra></extra>",
     ))
     fig.update_layout(
-        height=340, margin=dict(t=30, b=60, l=60, r=10),
-        title=dict(text=f"Local Linear R² — {joint}", font=dict(size=12)),
-        xaxis=dict(title="Azimuth Bin", tickangle=-30),
-        yaxis=dict(title="Height Layer"),
+        height=340, margin=dict(t=50, b=60, l=60, r=10),
+        title=dict(
+            text=(
+                f"局所線形性マップ — {joint}｜緑=線形近似有効（R²→1）、赤=不十分<br>"
+                "<sup>各セル = 1ビンで OLS フィットした R²。赤いビンはサンプル不足 or 非線形領域。</sup>"
+            ),
+            font=dict(size=11),
+        ),
+        xaxis=dict(title="Azimuth Bin（方位角）", tickangle=-30),
+        yaxis=dict(title="Height Layer（高さ層）"),
     )
     return fig
 
@@ -854,9 +942,24 @@ def update_beta_bar(joint):
         hovertemplate="<b>%{x}</b>: %{y:.4f}<extra></extra>",
     )
     fig.add_hline(y=0, line_color="gray", line_width=1)
+    fig.add_annotation(
+        text=(
+            "グローバルモデル: e = β₀ + β₁·Y + β₂·D + β₃·sinφ + β₄·cosφ + β₅·ε<br>"
+            "正 = その変数が増えると誤差が増加、負 = 誤差が減少<br>"
+            "局所モデルでは各ビンごとに異なる β を持つ（→ ヒートマップで確認）"
+        ),
+        xref="paper", yref="paper",
+        x=0.5, y=1.0,
+        xanchor="center", yanchor="bottom",
+        showarrow=False,
+        font=dict(size=9, color="#555"),
+        bgcolor="rgba(255,255,255,0.8)",
+        bordercolor="#ccc",
+        borderwidth=1,
+    )
     fig.update_layout(
-        height=340, margin=dict(t=30, b=60, l=40, r=10),
-        title=dict(text=f"Global β — {joint}  (e = X·β)", font=dict(size=12)),
+        height=340, margin=dict(t=70, b=60, l=40, r=10),
+        title=dict(text=f"グローバル β係数 — {joint}  ｜e = X·β （全視点一括回帰）", font=dict(size=11)),
         yaxis_title="Coefficient value",
         plot_bgcolor="white",
         showlegend=False,
@@ -900,17 +1003,52 @@ def update_local_scatter(joint):
         ))
 
     overall_mean = float(df_local[df_local["joint"] == joint]["r2"].mean())
-    fig.add_hline(y=overall_mean, line_dash="dot", line_color="gray",
-                  annotation_text=f"joint mean R²={overall_mean:.3f}",
-                  annotation_font_size=10, annotation_position="top right")
+
+    # 局所モデル平均 R² ライン（= 局所線形仮説の全ビン平均的な成立度）
+    fig.add_hline(
+        y=overall_mean, line_dash="dot", line_color="steelblue",
+        annotation_text=f"局所モデル平均 R²={overall_mean:.3f}",
+        annotation_font_size=10, annotation_position="top right",
+        annotation_font_color="steelblue",
+    )
+    # 「線形近似有効」とみなす目安ライン (R²=0.7)
+    fig.add_hline(
+        y=0.7, line_dash="dash", line_color="#E53935", line_width=1,
+        annotation_text="線形近似有効の目安 R²=0.70",
+        annotation_font_size=9, annotation_position="bottom right",
+        annotation_font_color="#E53935",
+    )
+    # 説明アノテーション
+    fig.add_annotation(
+        text=(
+            "【読み方】各点 = 1ビン（方位角×高さ）<br>"
+            "X軸 = ビン内サンプル数（少ないと R² が不安定）<br>"
+            "Y軸 = 局所線形モデルの R²（仮説の成立度）<br>"
+            "赤線以上 → そのビンで線形近似が有効"
+        ),
+        xref="paper", yref="paper",
+        x=0.01, y=0.01,
+        showarrow=False,
+        align="left",
+        font=dict(size=9, color="#555"),
+        bgcolor="rgba(255,255,255,0.8)",
+        bordercolor="#ccc",
+        borderwidth=1,
+    )
     fig.update_layout(
-        height=320,
-        margin=dict(t=40, b=40, l=50, r=10),
-        xaxis_title="n (samples in bin)",
-        yaxis=dict(title="Local R²", range=[0, 1.05]),
-        title=dict(text=f"Local R² vs sample size — {joint}", font=dict(size=12)),
+        height=360,
+        margin=dict(t=40, b=50, l=50, r=10),
+        xaxis_title="n (ビン内サンプル数)",
+        yaxis=dict(title="Local R²（局所線形近似の精度）", range=[0, 1.1]),
+        title=dict(
+            text=(
+                f"局所線形性の検証 — {joint}  "
+                "（各ビンで OLS フィット → R² 算出 → 仮説の成立を確認）"
+            ),
+            font=dict(size=11),
+        ),
         plot_bgcolor="white",
-        legend=dict(title="Height", orientation="h", y=-0.25),
+        legend=dict(title="Height Layer", orientation="h", y=-0.22),
         hovermode="closest",
     )
     return fig
