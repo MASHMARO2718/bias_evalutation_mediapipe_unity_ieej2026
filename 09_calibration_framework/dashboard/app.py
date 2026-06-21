@@ -609,6 +609,231 @@ def build_bin_reference_tab():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Tab 6: Raw Data (生データ・線形性チェック)
+# ─────────────────────────────────────────────────────────────────────────────
+def build_raw_data_tab():
+    """補正なし生データを特徴量別にプロットして線形性を視覚確認するタブ。"""
+    return dbc.Container([
+        dbc.Row([
+            dbc.Col([
+                dbc.Alert([
+                    html.Strong("中央分割フィット: "),
+                    "補正なし生 MAE を各特徴量に対してプロット。x 軸の中央値で左右に分割し、"
+                    "それぞれに 2次（二次曲線）・4次（四次曲線）を独立フィット。"
+                    "凡例の R² を比べることで左右の非対称性や曲線次数の適合度を確認できます。"
+                    "  🟠 左-2次  🔴 左-4次  🔵 右-2次  🟢 右-4次",
+                ], color="info", className="mb-3 py-2"),
+            ], width=12),
+        ]),
+        dbc.Row([
+            dbc.Col(card("表示関節", [
+                dcc.Dropdown(
+                    id="rd-joint",
+                    options=[{"label": j, "value": j} for j in JOINTS],
+                    value="L_Shoulder", clearable=False,
+                ),
+            ]), width=3),
+            dbc.Col(card("表示高さ層（複数選択可）", [
+                dcc.Dropdown(
+                    id="rd-layers",
+                    options=[{"label": l, "value": l} for l in LAYERS],
+                    value=LAYERS,
+                    multi=True, clearable=False,
+                ),
+            ]), width=5),
+            dbc.Col(card("サンプリング", [
+                dcc.RadioItems(
+                    id="rd-sample",
+                    options=[
+                        {"label": "全データ", "value": "all"},
+                        {"label": "ランダム 50%", "value": "half"},
+                        {"label": "ランダム 25%", "value": "quarter"},
+                    ],
+                    value="all",
+                    labelStyle={"marginRight": "12px"},
+                    inputStyle={"marginRight": "4px"},
+                ),
+            ]), width=4),
+        ]),
+        dbc.Row([
+            dbc.Col(card(
+                "生 MAE vs 方位角 (azimuth_deg)  ─  中央分割 × 2次・4次フィット",
+                dcc.Graph(id="rd-az", style={"height": "360px"},
+                          config={"displayModeBar": True}),
+            ), width=6),
+            dbc.Col(card(
+                "生 MAE vs 水平距離 (distance)  ─  中央分割 × 2次・4次フィット",
+                dcc.Graph(id="rd-dist", style={"height": "360px"},
+                          config={"displayModeBar": True}),
+            ), width=6),
+        ]),
+        dbc.Row([
+            dbc.Col(card(
+                "生 MAE vs カメラ高さ (camera_y)  ─  中央分割 × 2次・4次フィット",
+                dcc.Graph(id="rd-height", style={"height": "360px"},
+                          config={"displayModeBar": True}),
+            ), width=6),
+            dbc.Col(card(
+                "生 MAE vs 仰角 (elevation_deg)  ─  中央分割 × 2次・4次フィット",
+                dcc.Graph(id="rd-elev", style={"height": "360px"},
+                          config={"displayModeBar": True}),
+            ), width=6),
+        ]),
+        dbc.Row([
+            dbc.Col(card(
+                "生 MAE vs sin(方位角)  ─  中央分割 × 2次・4次フィット",
+                dcc.Graph(id="rd-sinaz", style={"height": "360px"},
+                          config={"displayModeBar": True}),
+            ), width=6),
+            dbc.Col(card(
+                "生 MAE vs cos(方位角)  ─  中央分割 × 2次・4次フィット",
+                dcc.Graph(id="rd-cosaz", style={"height": "360px"},
+                          config={"displayModeBar": True}),
+            ), width=6),
+        ]),
+    ], fluid=True)
+
+
+def _poly_r2(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    ss_res = np.sum((y_true - y_pred) ** 2)
+    ss_tot = np.sum((y_true - y_true.mean()) ** 2)
+    return float(1 - ss_res / (ss_tot + 1e-12))
+
+
+# 左右それぞれの色設定
+_SIDE_STYLES = {
+    "left": {
+        2: dict(color="darkorange",   fill="rgba(255,140,0,0.09)",  dash="dash"),
+        4: dict(color="tomato",       fill="rgba(255,80,60,0.09)",  dash="dot"),
+    },
+    "right": {
+        2: dict(color="steelblue",    fill="rgba(70,130,180,0.09)", dash="dash"),
+        4: dict(color="mediumseagreen", fill="rgba(60,179,113,0.09)", dash="dot"),
+    },
+}
+_SIDE_LABEL = {"left": "左半", "right": "右半"}
+
+
+def _add_split_poly_fit(fig: go.Figure, x_v: np.ndarray, y_v: np.ndarray,
+                        x_line: np.ndarray, degree: int, side: str) -> None:
+    """左または右半分のデータに多項式フィット線 + 95% 信頼帯を追加するヘルパー。"""
+    if len(x_v) <= degree + 1:
+        return
+
+    style = _SIDE_STYLES[side][degree]
+    coeffs = np.polyfit(x_v, y_v, degree)
+    y_fit = np.polyval(coeffs, x_line)
+    y_pred_data = np.polyval(coeffs, x_v)
+    residuals = y_v - y_pred_data
+    r2 = _poly_r2(y_v, y_pred_data)
+
+    se = residuals.std(ddof=min(degree + 1, len(x_v) - 1))
+    ci = np.full_like(x_line, 1.96 * se)
+
+    # 95% 信頼帯
+    fig.add_trace(go.Scatter(
+        x=np.concatenate([x_line, x_line[::-1]]),
+        y=np.concatenate([y_fit + ci, (y_fit - ci)[::-1]]),
+        fill="toself", fillcolor=style["fill"],
+        line=dict(width=0), showlegend=False, hoverinfo="skip",
+    ))
+
+    side_jp = _SIDE_LABEL[side]
+    label = f"{side_jp} {degree}次  R²={r2:.3f}"
+    fig.add_trace(go.Scatter(
+        x=x_line, y=y_fit,
+        mode="lines",
+        name=label,
+        line=dict(color=style["color"], width=2.2, dash=style["dash"]),
+        hovertemplate=(
+            f"<b>{label}</b><br>x: %{{x:.2f}}<br>predicted: %{{y:.2f}}°<extra></extra>"
+        ),
+    ))
+
+
+def _make_raw_scatter(sub: pd.DataFrame, x_col: str, joint: str,
+                      x_label: str) -> go.Figure:
+    """生データ散布図 + 中央分割 × 2次・4次多項式フィットを生成するヘルパー。"""
+    layer_colors = {
+        "Y=0.5": "#636EFA", "Y=1.0": "#EF553B",
+        "Y=1.5": "#00CC96", "Y=2.0": "#AB63FA",
+    }
+
+    fig = go.Figure()
+
+    # 高さ層別に散布点をプロット
+    for layer in LAYERS:
+        grp = sub[sub["height_label"] == layer]
+        if grp.empty:
+            continue
+        fig.add_trace(go.Scatter(
+            x=grp[x_col], y=grp[joint],
+            mode="markers",
+            name=layer,
+            marker=dict(
+                color=layer_colors.get(layer, "#888"),
+                size=7, opacity=0.55,
+                line=dict(width=0.5, color="white"),
+            ),
+            hovertemplate=(
+                f"<b>{layer}</b><br>"
+                f"{x_label}: %{{x:.2f}}<br>"
+                f"MAE ({joint}): %{{y:.2f}}°<extra></extra>"
+            ),
+        ))
+
+    # 全データを取得し中央で左右分割
+    x_vals = sub[x_col].to_numpy(dtype=float)
+    y_vals = sub[joint].to_numpy(dtype=float)
+    valid = np.isfinite(x_vals) & np.isfinite(y_vals)
+    x_v, y_v = x_vals[valid], y_vals[valid]
+
+    if len(x_v) < 10:
+        fig.update_layout(
+            xaxis_title=x_label,
+            yaxis_title=f"角度 MAE ({joint}) [°]",
+            plot_bgcolor="white",
+            margin=dict(t=10, b=40, l=50, r=10),
+        )
+        return fig
+
+    x_mid = (x_v.min() + x_v.max()) / 2.0
+
+    left_mask  = x_v <  x_mid
+    right_mask = x_v >= x_mid
+    x_left,  y_left  = x_v[left_mask],  y_v[left_mask]
+    x_right, y_right = x_v[right_mask], y_v[right_mask]
+
+    # 左右それぞれのフィット用 x 軸
+    x_line_left  = np.linspace(x_v.min(), x_mid,        150)
+    x_line_right = np.linspace(x_mid,     x_v.max(),    150)
+
+    for degree in (2, 4):
+        _add_split_poly_fit(fig, x_left,  y_left,  x_line_left,  degree, "left")
+        _add_split_poly_fit(fig, x_right, y_right, x_line_right, degree, "right")
+
+    # 分割位置に垂直破線を追加
+    fig.add_vline(
+        x=x_mid, line_dash="dot", line_color="gray", line_width=1.5,
+        annotation_text=f"中央 {x_mid:.1f}",
+        annotation_position="top right",
+        annotation_font=dict(size=10, color="gray"),
+    )
+
+    fig.update_layout(
+        xaxis_title=x_label,
+        yaxis_title=f"角度 MAE ({joint}) [°]",
+        plot_bgcolor="white",
+        margin=dict(t=10, b=50, l=50, r=10),
+        legend=dict(orientation="h", y=-0.38, font=dict(size=11)),
+        hovermode="closest",
+    )
+    fig.update_xaxes(showgrid=True, gridcolor="#eee")
+    fig.update_yaxes(showgrid=True, gridcolor="#eee", rangemode="tozero")
+    return fig
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # レイアウト
 # ─────────────────────────────────────────────────────────────────────────────
 app.layout = dbc.Container([
@@ -628,6 +853,7 @@ app.layout = dbc.Container([
         dbc.Tab(build_linear_tab(),       label="Linear Model",  tab_id="tab-linear"),
         dbc.Tab(build_gridsearch_tab(),   label="Grid Search",   tab_id="tab-gs"),
         dbc.Tab(build_bin_reference_tab(), label="Bin Reference", tab_id="tab-ref"),
+        dbc.Tab(build_raw_data_tab(),     label="Raw Data",      tab_id="tab-raw"),
     ], id="main-tabs", active_tab="tab-overview"),
 
 ], fluid=True)
@@ -1096,6 +1322,48 @@ def update_gs_gap(_):
     fig.add_hline(y=0, line_dash="dot", line_color="gray")
     fig.update_layout(margin=dict(t=40, b=40, l=40, r=10), plot_bgcolor="white")
     return fig
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Callbacks: Raw Data
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _filter_raw(joint, layers, sample):
+    """Raw Data タブ用フィルタ・サンプリングヘルパー。"""
+    sub = df_all[df_all["height_label"].isin(layers)].copy()
+    if sample == "half":
+        sub = sub.sample(frac=0.5, random_state=42)
+    elif sample == "quarter":
+        sub = sub.sample(frac=0.25, random_state=42)
+    return sub
+
+
+@app.callback(
+    Output("rd-az",     "figure"),
+    Output("rd-dist",   "figure"),
+    Output("rd-height", "figure"),
+    Output("rd-elev",   "figure"),
+    Output("rd-sinaz",  "figure"),
+    Output("rd-cosaz",  "figure"),
+    Input("rd-joint",   "value"),
+    Input("rd-layers",  "value"),
+    Input("rd-sample",  "value"),
+)
+def update_raw_plots(joint, layers, sample):
+    if not layers or not joint:
+        empty = go.Figure()
+        return [empty] * 6
+
+    sub = _filter_raw(joint, layers, sample)
+
+    return (
+        _make_raw_scatter(sub, "azimuth_deg",   joint, "方位角 [°]"),
+        _make_raw_scatter(sub, "distance",      joint, "水平距離 [m]"),
+        _make_raw_scatter(sub, "camera_y",      joint, "カメラ高さ Y [m]"),
+        _make_raw_scatter(sub, "elevation_deg", joint, "仰角 [°]"),
+        _make_raw_scatter(sub, "sin_azimuth",   joint, "sin(方位角)"),
+        _make_raw_scatter(sub, "cos_azimuth",   joint, "cos(方位角)"),
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
