@@ -120,12 +120,39 @@ python experiments/run_evaluation.py    # Phase B: 全モデル評価
 
 - **初見向け**: `00_quickstart/`
 - **Docker**: `docker/`、`docker-compose.yml`
-- **論文・考察**: `paper/`（Overleaf 用は `paper/source/main.tex` と `paper/source/IEEJ_*`）
+- **論文・考察**: `paper/`（下記「論文フォルダ」参照）
 - **開発者向け**: `08_dev/README.md`
 - **旧パイプライン**: `run_full_pipeline.py` → `run.py` に委譲
 - **ローカル作業コピー Zeval_DataSet との対応**: `docs/ZEVAL_DATASET_LAYOUT.md`
 - **再現性・検証**: `docs/REPRODUCTION.md`、`python verify_paper_data.py`
 - **補正フレームワーク**: `09_calibration_framework/README.md`、`09_calibration_framework/CODE_REVIEW.md`
+
+---
+
+## 論文フォルダ
+
+```
+paper/
+├── IEEJ_01/                    論文 1: MediaPipe バイアス評価（提出済み）
+│   ├── README.md               LaTeX コンパイル手順・Overleaf 準備
+│   ├── source/
+│   │   ├── IEEJ_en/            英語版 LaTeX ソース（main.tex, ieej-e.cls, figs/）
+│   │   └── IEEJ_ja/            日本語版 LaTeX ソース
+│   └── submitted/              提出済み PDF・スライド
+│
+└── IEEJ_02/                    論文 2: 局所線形補正フレームワーク（執筆中）
+    ├── README.md               論文 2 全体説明・コンパイル手順
+    ├── IEEJ_en_calibration/    英語版（main.tex, ieej-e.cls, figs/） ← 主論文
+    │   └── README.md           図一覧・セクション構成・キーワード
+    └── IEEJ_ja_calibration/    日本語版（main.tex, generate_figs.py, PAPER_MEMO.md）
+```
+
+### 論文 2 のコンパイル
+
+```bash
+cd paper/IEEJ_02/IEEJ_en_calibration
+pdflatex main.tex && pdflatex main.tex
+```
 
 ### 公開用リポジトリについて
 

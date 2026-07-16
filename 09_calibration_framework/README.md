@@ -102,37 +102,65 @@ n_azimuth=4, n_distance=1  (score=23.78)
 
 ```
 09_calibration_framework/
-├── docs/               提案書（設計ドキュメント）
-├── src/                実装本体
-│   ├── config.py       定数・パス定義
-│   ├── data_loader.py  CSV 読み込み・カメラ特徴量付加
-│   ├── features.py     View-space Binning
-│   ├── phase_a/        キャリブレーション（GT 必須）
-│   │   ├── bias_estimator.py   Model 2〜4
-│   │   └── linear_estimator.py Model 5 (OLS)
-│   ├── phase_b/        補正適用（GT 不要）
+├── README.md           このファイル
+├── IMPLEMENTATION.md   実装詳細（モジュール別 API）
+├── CODE_REVIEW.md      コードレビューガイド
+│
+├── src/                実装本体（コアライブラリ）
+│   ├── config.py           定数・パス定義（入出力先を一元管理）
+│   ├── data_loader.py      CSV 読み込み・カメラ特徴量付加
+│   ├── features.py         View-space Binning（方位角・高さ・距離）
+│   ├── phase_a/            Phase A: バイアス推定（GT 必須）
+│   │   ├── bias_estimator.py   Model 2〜4 バイアステーブル構築
+│   │   └── linear_estimator.py Model 5 全体線形 OLS
+│   ├── phase_b/            Phase B: 補正適用（GT 不要・推論時に使用）
 │   │   ├── corrector.py        Model 2〜5 補正
 │   │   └── pelvis.py           Model 6 骨盤剛体制約
-│   └── evaluation/     評価
-│       ├── metrics.py          全評価指標
-│       └── split.py            データ分割
-├── experiments/        実行スクリプト
-│   ├── run_calibration.py
-│   ├── run_evaluation.py
-│   └── grid_search.py
-└── outputs/            生成物（git 除外推奨）
-    ├── bias_tables/    Phase A 出力
-    ├── results/        評価結果
-    └── figures/        図
+│   └── evaluation/         評価指標・データ分割
+│       ├── metrics.py          MAE・RMSE・改善率等
+│       └── split.py            camera-level 70/15/15 分割
+│
+├── experiments/        本実装の実行スクリプト（順番に実行）
+│   ├── run_calibration.py  Phase A: バイアステーブル生成
+│   ├── run_evaluation.py   Phase B: 全モデル評価
+│   └── grid_search.py      ハイパーパラメータ探索（任意）
+│
+├── scripts/            追加分析・図生成スクリプト（論文用）
+│   ├── README.md           ← 各スクリプトの詳細説明
+│   ├── signed_bias_eval.py 符号付き補正評価（M4S vs M4U）
+│   ├── gen_signed_figs.py  符号付き評価の図生成
+│   ├── gen_ablation_failure.py  n_az アブレーション＋低 R² 失敗ケース
+│   ├── model6_eval.py      Model 6 骨盤剛体制約の評価
+│   └── r2_vs_correction.py 局所 R² vs 補正効果の相関分析
+│
+├── dashboard/          ブラウザ GUI（Dash）
+│   ├── app.py              ポート 8051 で起動
+│   └── requirements.txt
+│
+├── docs/               設計ドキュメント・分析レポート
+│   ├── README.md           ← 各ドキュメントの説明
+│   ├── 01_補正モデル仕様.md
+│   ├── 02_局所線形補正フレームワーク提案.md
+│   ├── 03_補正アーキテクチャ図.md
+│   ├── 04_局所線形性評価の解説.md
+│   ├── 05_linearity_analysis.md  生データ線形性分析レポート
+│   └── 06_signed_bias_analysis.md  符号付き補正分析レポート
+│
+└── outputs/            生成物（Git 除外・ローカルのみ）
+    ├── README.md           ← 各ファイルの説明
+    ├── RUN_REPORT.md       Phase A/B 詳細実行レポート
+    ├── bias_tables/        Phase A 出力（model2〜5 バイアステーブル）
+    ├── results/            評価 CSV（グリッドサーチ・signed 評価等）
+    └── figures/            論文用図（PNG）
 ```
 
 ---
 
 ## 既知の限界と今後の作業
 
-| 課題 | 影響 | 対策 |
+| 課題 | 状態 | 詳細 |
 |---|---|---|
-| unsigned MAE → 符号不明 | Model 2/5 が過補正 | `detailed_results.csv` 生成・利用 |
-| Bin coverage 3/32 | 評価が粗い | per-sample signed データで CV に切り替え |
-| Model 6/7 が未完成 | 骨盤・骨長補正なし | 3D 座標の signed 値が必要 |
-| λ=1.0 固定 | 過補正リスク | Validation で λ を最適化 |
+| unsigned MAE → 過補正 | **解決済み** | `detailed_results.csv` + `scripts/signed_bias_eval.py` で符号付き補正を実装 |
+| λ=1.0 固定 | **解析済み** | `scripts/signed_bias_eval.py` の λ 感度分析で最適値は 0.75〜1.0 と判明 |
+| Model 6（骨盤）が未完成 | **部分実装** | `scripts/model6_eval.py` で検証済み。GT の z 差分が 0 のため τ 推定に課題あり |
+| R² vs 補正効果の乖離 | **発見・記録済み** | 局所 R²（MAE 空間）と補正効果（方向角空間）はほぼ無相関（Pearson r ≈ 0） |

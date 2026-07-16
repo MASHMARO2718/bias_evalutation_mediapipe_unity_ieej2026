@@ -9,7 +9,7 @@ PROJECT_ROOT = Path(__file__).parent
 
 # データパス
 GT_CSV = PROJECT_ROOT / "synced_joint_positions.csv"
-MP_DIR = PROJECT_ROOT / "02_mediapipe_processed"  # MediaPipe CSV
+MP_DIR = PROJECT_ROOT / "02_mediapipe_processed" / "mediapipe_processed_csv"  # MediaPipe CSV
 
 # Y範囲
 Y_RANGES = ["Y=0.5", "Y=1.0", "Y=1.5", "Y=2.0"]
