@@ -41,11 +41,15 @@ HERE = Path(__file__).resolve().parent.parent   # 09_calibration_framework/
 ROOT = HERE.parent                              # project root
 
 sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(ROOT))
 from src.config import DATA, OUTPUT
+import config as root_config
+from tools.gt_adapter import load_gt_csv, find_gt_csv_for_camera
 
-# ── 出力フォルダ ──────────────────────────────────────────────────────────
-OUT_DIR = Path(__file__).parent / "output"
-OUT_DIR.mkdir(exist_ok=True)
+# ── 出力フォルダ（v2 は別サブフォルダ）──────────────────────────────────
+_ds = getattr(root_config, "DATASET_VERSION", "v1")
+OUT_DIR = Path(__file__).parent / "output" / ("v2" if _ds == "v2" else "v1")
+OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── 関節定義（3点角）──────────────────────────────────────────────────────
 JOINT_DEFS = {
@@ -116,7 +120,8 @@ def height_bin(y: float) -> int:
 def load_mp(camera_name: str, height: float) -> pd.DataFrame:
     """MediaPipe CSV を読み込み、MID_SHOULDER / MID_HIP を追加して返す。"""
     layer = f"Y={height}"
-    mp_dir = ROOT / "02_mediapipe_processed" / "mediapipe_processed_csv" / layer
+    # config.MP_DIR は DATASET_VERSION に応じて v1/v2 を切り替える
+    mp_dir = Path(root_config.MP_DIR) / layer
     csv_path = mp_dir / f"{camera_name}.csv"
     if not csv_path.exists():
         raise FileNotFoundError(f"MediaPipe CSV not found: {csv_path}")
@@ -151,11 +156,44 @@ def load_mp(camera_name: str, height: float) -> pd.DataFrame:
     return df
 
 
-def load_gt() -> pd.DataFrame:
+def load_gt(camera_name: str | None = None) -> pd.DataFrame:
+    """
+    GT を読み込む。
+    v2: 01_input_videos/<camera>/gt_joints.csv（カメラ別・同期済み）
+    v1: synced_joint_positions.csv または 01_input_photos 内の synced CSV
+    """
+    input_dir = getattr(root_config, "INPUT_DIR", None)
+    if camera_name and input_dir is not None:
+        gt_path = find_gt_csv_for_camera(camera_name, input_dir)
+        if gt_path is not None:
+            return load_gt_csv(gt_path)
+
+    # フォールバック: マスター GT
     gt_path = ROOT / "synced_joint_positions.csv"
     if not gt_path.exists():
-        raise FileNotFoundError(f"GT CSV not found: {gt_path}")
-    return pd.read_csv(gt_path).rename(columns={"Frame": "frame_id"})
+        raise FileNotFoundError(
+            f"GT CSV not found for camera={camera_name}, "
+            f"INPUT_DIR={input_dir}, master={gt_path}"
+        )
+    return load_gt_csv(gt_path)
+
+
+def best_lag(gt: np.ndarray, mp: np.ndarray, max_lag: int = 20) -> tuple[int, float]:
+    """相互相関で最良ラグを返す（正 = MP が GT より遅れている）。"""
+    mask = np.isfinite(gt) & np.isfinite(mp)
+    g, m = gt[mask], mp[mask]
+    if len(g) < 10:
+        return 0, float("nan")
+    g = g - np.nanmean(g)
+    m = m - np.nanmean(m)
+    corr = np.correlate(g, m, mode="full")
+    lags = np.arange(-len(m) + 1, len(g))
+    mid = len(corr) // 2
+    lo, hi = mid - max_lag, mid + max_lag + 1
+    window = corr[lo:hi]
+    lag_window = lags[lo:hi]
+    i = int(np.argmax(window))
+    return int(lag_window[i]), float(window[i])
 
 
 def get_mp_point(df: pd.DataFrame, frame_id: int, name: str,
@@ -240,16 +278,17 @@ COLORS = {
 }
 
 def plot_pair(angles_df: pd.DataFrame, joint: str, camera: str,
-              h_bin: int, az_bin: int, az_deg: float):
+              h_bin: int, az_bin: int, az_deg: float, lag: int | None = None):
     """
     上段: GT / MP / 補正後 の重ね合わせ
     下段: MP誤差（|MP-GT|）と補正誤差（|corr-GT|）の比較
     """
+    lag_txt = f"  |  Cross-corr lag: {lag:+d} frames" if lag is not None else ""
     fig, axes = plt.subplots(2, 1, figsize=(12, 7), sharex=True,
                              gridspec_kw={"height_ratios": [3, 1.5]})
     fig.suptitle(
-        f"Joint Angle Time-series  |  Joint: {joint}  |  Camera: {camera}\n"
-        f"Azimuth: {az_deg:.1f}°  |  Height-bin: {h_bin}  |  Azimuth-bin: {az_bin}",
+        f"Joint Angle Time-series [{_ds}]  |  Joint: {joint}  |  Camera: {camera}\n"
+        f"Azimuth: {az_deg:.1f}°  |  Height-bin: {h_bin}  |  Azimuth-bin: {az_bin}{lag_txt}",
         fontsize=11, y=0.98,
     )
 
@@ -333,10 +372,13 @@ def main():
     h_bin  = height_bin(cy)
     az_bin = azimuth_bin(az_deg, args.n_az)
 
-    print(f"\nCamera : {args.camera}")
+    print(f"\nDATASET_VERSION = {_ds}")
+    print(f"Camera : {args.camera}")
     print(f"  X={cx}, Y={cy}, Z={cz}")
     print(f"  Azimuth={az_deg:.1f}°  height_bin={h_bin}  azimuth_bin={az_bin}")
     print(f"Joints : {args.joints}")
+    print(f"MP_DIR : {root_config.MP_DIR}")
+    print(f"INPUT  : {getattr(root_config, 'INPUT_DIR', None)}")
 
     # データ読み込み
     print("\nLoading MediaPipe data ...")
@@ -344,7 +386,7 @@ def main():
     print(f"  Frames: {mp_df['frame_id'].nunique()}")
 
     print("Loading Ground Truth data ...")
-    gt_df = load_gt()
+    gt_df = load_gt(args.camera)
     print(f"  Frames: {gt_df['frame_id'].nunique()}")
 
     # 各関節をプロット
@@ -359,8 +401,13 @@ def main():
             continue
         print(f"  Common frames: {len(angles_df)}")
 
+        lag, corr_peak = best_lag(
+            angles_df["gt"].to_numpy(), angles_df["mp"].to_numpy()
+        )
+        print(f"  Best lag (GT vs MP): {lag:+d} frames  (peak={corr_peak:.1f})")
+
         angles_df["corr"] = apply_correction(angles_df, joint, h_bin, az_bin)
-        plot_pair(angles_df, joint, args.camera, h_bin, az_bin, az_deg)
+        plot_pair(angles_df, joint, args.camera, h_bin, az_bin, az_deg, lag=lag)
 
     print(f"\nAll outputs saved to: {OUT_DIR}/")
 

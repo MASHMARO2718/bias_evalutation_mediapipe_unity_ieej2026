@@ -19,6 +19,11 @@ GT_CSV = _root.GT_CSV
 MP_DIR = _root.MP_DIR
 Y_RANGES = _root.Y_RANGES
 
+# データセットバージョン関連（v1/v2 切り替え。ルート config.py で定義）
+DATASET_VERSION = getattr(_root, "DATASET_VERSION", "v1")
+INPUT_DIR = getattr(_root, "INPUT_DIR", None)
+GT_MODE = getattr(_root, "GT_MODE", "master")
+
 # プロジェクトルート（05_direction_detection）
 PROJECT_ROOT = Path(__file__).parent
 

@@ -1,0 +1,6 @@
+﻿check,max_theta_gt_std_deg,mean_theta_gt_std_deg,n_frame_joint_pairs,joint,pearson_r,n_samples
+theta_gt_invariance,76.94528626015618,1.2381046924692332,1296.0,,,
+delta_theta_vs_azimuth,,,,LEFT_ELBOW,0.09907500448198377,21521.0
+delta_theta_vs_azimuth,,,,RIGHT_ELBOW,-0.053855773153139004,21521.0
+delta_psi_vs_elevation,,,,LEFT_ELBOW,0.0570683642713723,21521.0
+delta_psi_vs_elevation,,,,RIGHT_ELBOW,-0.10205225461653278,21521.0

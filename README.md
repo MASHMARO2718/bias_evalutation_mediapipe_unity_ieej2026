@@ -39,24 +39,53 @@ python run.py
 
 ---
 
+## データセットバージョン
+
+`config.py` の `DATASET_VERSION` を切り替えるだけで v1（旧）/v2（新）を使い分けられます。
+
+```python
+# config.py
+DATASET_VERSION = "v1"   # 旧データ（JPG・同期ずれあり）
+# DATASET_VERSION = "v2" # 新データ（動画・フレーム同期済み）
+```
+
+| | v1（旧） | v2（新） |
+|--|---------|---------|
+| 収集日 | 2025-12 | 2026-07 |
+| 入力形式 | `01_input_photos/` JPG × 107枚/カメラ | `01_input_videos/` video.mp4 + gt_joints.csv/カメラ |
+| GT 形式 | `synced_joint_positions_*.csv`（Unity グローバル時刻）| `gt_joints.csv`（frame_id/time_sec 同期済み）|
+| 同期 | 約 3 フレームのずれあり（IEEJ_01 論文のデータ） | フレーム完全同期 |
+| MediaPipe 出力 | `02_mediapipe_processed/` | `02_mediapipe_v2/`（処理後に生成）|
+
+詳細: [`docs/SYNC_ISSUE_REPORT.md`](docs/SYNC_ISSUE_REPORT.md)
+
+---
+
 ## ディレクトリ構成
 
 番号付きフォルダは処理段階の目安です。**`run.py` が自動で回すのは** ステップ0（MediaPipe: `01`→`02`）〜ステップ5（`verify_paper_data.py`）と、完了時の **`07_dashboard` 起動（オプション）** までです。`06_theta_verification` と `08_dev` は手動実行用です。
 
 ```
 ├── run.py / config.py / verify_paper_data.py
-├── synced_joint_positions.csv  # Unity GT（ローカル作業時。Git 方針は .gitignore 参照）
 ├── requirements.txt
 ├── docker-compose.yml
 │
-├── docs/                     # 再現性・Zeval 対応表
+├── docs/                     # 再現性・Zeval 対応表・同期ずれレポート
 ├── docker/
 ├── paper/
 ├── tools/                    # 移行スクリプトなど
 │
 ├── 00_quickstart/
-├── 01_input_photos/          # 入力画像（大容量のため通常 .gitignore）
-├── 02_mediapipe_processed/   # MediaPipe バッチ出力（Y=0.5 … Y=2.0 配下に CSV）
+│
+├── # ─── v1 データ（旧・JPG キャプチャ・2025-12 収集） ────────────────────
+├── 01_input_photos/          # v1 raw: JPG × 107枚 + synced_joint_positions_*.csv
+├── 02_mediapipe_processed/   # v1 MediaPipe 出力（Y=0.5 … Y=2.0 配下に CSV）
+│
+├── # ─── v2 データ（新・動画キャプチャ・2026-07 収集） ────────────────────
+├── 01_input_videos/          # v2 raw: video.mp4 + gt_joints.csv（フレーム同期済み）
+├── 02_mediapipe_v2/          # v2 MediaPipe 出力（処理後に生成される）
+│
+├── # ─── 処理スクリプト（v1/v2 共通・config.py で切り替え） ────────────────
 ├── 03_joint_angle_mae/       # 3点角 MAE（層別 CSV・統合・ヒートマップ）
 ├── 04_max_angle_error/       # 最大角度誤差
 ├── 05_direction_detection/   # 方向角・相関（論文 processed 系の主出力）
@@ -66,7 +95,7 @@ python run.py
 └── 09_calibration_framework/ # パラメトリック補正フレームワーク（研究提案実装）
 ```
 
-MediaPipe の CSV は **リポジトリ直下ではなく** 常に `02_mediapipe_processed/Y=0.5/` のように `Y=` 接頭辞付きフォルダへ出ます（ルートに `0.5` だけのフォルダがあれば誤配置です）。
+MediaPipe の CSV は常に `02_mediapipe_processed/Y=0.5/`（v1）または `02_mediapipe_v2/mediapipe_processed_csv/Y=0.5/`（v2）のように `Y=` 接頭辞付きフォルダへ出ます。
 
 ---
 

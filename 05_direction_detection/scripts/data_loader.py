@@ -2,12 +2,19 @@
 データ読み込みモジュール（7 と同一）
 """
 
+import sys
 import pandas as pd
 import numpy as np
 from pathlib import Path
 from typing import Dict, List, Optional
 import config
 from scripts.logger import get_logger
+
+# リポジトリルートの tools/gt_adapter を使う（v1/v2 GT 列名差異の吸収）
+_repo_root = Path(__file__).parent.parent.parent
+if str(_repo_root) not in sys.path:
+    sys.path.insert(0, str(_repo_root))
+from tools.gt_adapter import load_gt_csv, find_gt_csv_for_camera
 
 
 class DataLoader:
@@ -16,12 +23,27 @@ class DataLoader:
         self.gt_csv = config.GT_CSV
         self.mp_dir = config.MP_DIR
         self.joint_mapping = config.JOINT_MAPPING
-        self.logger.info("DataLoader initialized")
+        self.gt_mode = getattr(config, "GT_MODE", "master")
+        self.input_dir = getattr(config, "INPUT_DIR", None)
+        self.logger.info(f"DataLoader initialized (GT_MODE={self.gt_mode})")
 
-    def load_ground_truth(self, frame_id: Optional[int] = None) -> pd.DataFrame:
-        if not self.gt_csv.exists():
-            raise FileNotFoundError(f"GroundTruth CSV not found: {self.gt_csv}")
-        df = pd.read_csv(self.gt_csv)
+    def load_ground_truth(self, frame_id: Optional[int] = None,
+                          camera_position: Optional[str] = None) -> pd.DataFrame:
+        """
+        GT を読み込む。gt_adapter により v1（Frame/Time）・v2（frame_id/time_sec）
+        どちらの列名でも Frame 列を持つ DataFrame が返る。
+
+        camera_position 指定時（v2 の per-folder GT モード）はそのカメラの
+        gt_joints.csv を読む。未指定または見つからない場合はマスター GT_CSV。
+        """
+        gt_path = None
+        if camera_position is not None and self.input_dir is not None:
+            gt_path = find_gt_csv_for_camera(camera_position, self.input_dir)
+        if gt_path is None:
+            gt_path = self.gt_csv
+        if not Path(gt_path).exists():
+            raise FileNotFoundError(f"GroundTruth CSV not found: {gt_path}")
+        df = load_gt_csv(gt_path)
         if frame_id is not None:
             df = df[df['Frame'] == frame_id]
         return df

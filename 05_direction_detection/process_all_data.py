@@ -89,8 +89,15 @@ def main():
 
     loader = DataLoader()
     transformer = CoordinateTransformer()
-    gt_df = loader.load_ground_truth()
-    logger.info(f"GroundTruth: {len(gt_df)} rows")
+
+    # GT_MODE="per_folder_gt"（v2）はカメラごとに GT を読むため、ここではマスターのみ事前読み込み
+    per_folder_gt = getattr(config, "GT_MODE", "master") == "per_folder_gt"
+    master_gt_df = None
+    if not per_folder_gt:
+        master_gt_df = loader.load_ground_truth()
+        logger.info(f"GroundTruth (master): {len(master_gt_df)} rows")
+    else:
+        logger.info("GroundTruth: per-folder mode (v2, gt_joints.csv per camera)")
 
     all_cameras = []
     for y_range in config.Y_RANGES:
@@ -103,6 +110,10 @@ def main():
     for camera_idx, camera_name in enumerate(cameras, 1):
         logger.info(f"[{camera_idx}/{len(cameras)}] {camera_name}")
         try:
+            if per_folder_gt:
+                gt_df = loader.load_ground_truth(camera_position=camera_name)
+            else:
+                gt_df = master_gt_df
             mp_df = loader.load_mediapipe(camera_name)
             if mp_df is None or len(mp_df) == 0:
                 continue

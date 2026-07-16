@@ -4,14 +4,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent
 LAYERS = ["Y=0.5", "Y=1.0", "Y=1.5", "Y=2.0"]
+CSV_BASE = ROOT / "joint_angle_mae_csv"
 
 frames = []
 for layer in LAYERS:
-    p = ROOT / layer / "coordinate_angle_mae.csv"
+    p = CSV_BASE / layer / "coordinate_angle_mae.csv"
+    if not p.is_file():
+        # 旧パス互換
+        p = ROOT / layer / "coordinate_angle_mae.csv"
     if p.is_file():
         frames.append(pd.read_csv(p))
     else:
-        print(f"警告: 見つかりません {p}")
+        print(f"警告: 見つかりません {CSV_BASE / layer / 'coordinate_angle_mae.csv'}")
 
 if not frames:
     raise SystemExit("coordinate_angle_mae.csv が1つもありません")

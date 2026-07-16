@@ -319,18 +319,28 @@ def main():
         comparator.logger.error("--mp_csv と --gt_csv を指定してください")
         return
     
+    # GT をカメラ名で索引（v2: .../CapturedFrames_X_Y_Z/gt_joints.csv
+    #                     v1: 単一マスター CSV の場合はフォールバックで先頭を使用）
+    gt_by_camera = {}
+    for g in gt_csv_files:
+        p = Path(g)
+        if p.name == "gt_joints.csv" or p.name.startswith("synced_joint_positions"):
+            gt_by_camera[p.parent.name] = g
+        else:
+            gt_by_camera[p.stem] = g
+    fallback_gt = gt_csv_files[0]
+
     results = []
     
     for mp_csv_path in mp_csv_files:
         file_name = Path(mp_csv_path).stem
         camera_x, camera_y, camera_z = comparator.extract_camera_coordinates(file_name)
         
-        # Ground Truth CSVは1つで、全座標データを含む
         if not gt_csv_files:
             comparator.logger.warning(f"Ground Truth CSVが見つかりません")
             continue
         
-        matching_gt_csv = gt_csv_files[0]
+        matching_gt_csv = gt_by_camera.get(file_name, fallback_gt)
         
         try:
             joint_errors = comparator.compare_angles_for_coordinate(mp_csv_path, matching_gt_csv, args.joints)
