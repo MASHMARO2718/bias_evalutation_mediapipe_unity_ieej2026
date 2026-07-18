@@ -61,6 +61,33 @@ print(f"Loaded {len(df_detailed)} detailed records")
 print(f"Frames: {df_detailed['frame_id'].nunique()}, Cameras: {df_detailed['camera'].nunique()}")
 
 
+# ── 角度時系列データ（09_calibration_framework の一括出力）─────────────
+# scripts/output/<v1|v2>/CapturedFrames_X_Y_Z/angle_timeseries_<joint>_<safe>.csv
+ANGLE_TS_BASE = project_root / "09_calibration_framework" / "scripts" / "output"
+ANGLE_TS_JOINTS = ["L_Shoulder", "R_Shoulder", "L_Elbow", "R_Elbow",
+                   "L_Hip", "R_Hip", "L_Knee", "R_Knee"]
+ANGLE_TS_VERSIONS = [v.name for v in sorted(ANGLE_TS_BASE.glob("v*")) if v.is_dir()]
+
+
+def load_angle_timeseries(camera_name, joint, version="v2"):
+    """一括生成済みの角度時系列 CSV（frame, gt, mp, corr）を読み込む。無ければ None。"""
+    safe = camera_name.replace(".", "").replace("-", "m")
+    cam_dir = ANGLE_TS_BASE / version / camera_name
+    candidates = [
+        cam_dir / f"angle_timeseries_{joint}_{safe}.csv",
+        # v1 はカメラ別フォルダなしのフラット配置
+        ANGLE_TS_BASE / version / f"angle_timeseries_{joint}_{safe}.csv",
+    ]
+    path = next((p for p in candidates if p.exists()), None)
+    if path is None and cam_dir.exists():
+        # 命名規則が変わった場合に備えて glob でフォールバック
+        matches = list(cam_dir.glob(f"angle_timeseries_{joint}_*.csv"))
+        path = matches[0] if matches else None
+    if path is None:
+        return None
+    return pd.read_csv(path)
+
+
 # データ準備関数
 def parse_camera_coordinates(camera_name):
     """CapturedFrames_X_Y_Z から座標を抽出"""
@@ -261,6 +288,40 @@ app.layout = dbc.Container([
                 dbc.CardHeader("📉 時系列角度誤差 (選択カメラ)"),
                 dbc.CardBody([
                     dcc.Graph(id='time-series-graph', style={'height': '400px'})
+                ])
+            ])
+        ], width=12),
+    ], className="mb-4"),
+
+    # 関節角度時系列（GT / MediaPipe / 補正後）
+    dbc.Row([
+        dbc.Col([
+            dbc.Card([
+                dbc.CardHeader("📐 関節角度時系列 — GT vs MediaPipe vs 補正後 (選択カメラ)"),
+                dbc.CardBody([
+                    dbc.Row([
+                        dbc.Col([
+                            html.Label("関節", style={'font-size': '0.85rem'}),
+                            dcc.Dropdown(
+                                id='angle-ts-joint-dropdown',
+                                options=[{'label': j, 'value': j} for j in ANGLE_TS_JOINTS],
+                                value='R_Elbow',
+                                clearable=False
+                            ),
+                        ], width=4),
+                        dbc.Col([
+                            html.Label("データセット", style={'font-size': '0.85rem'}),
+                            dcc.Dropdown(
+                                id='angle-ts-version-dropdown',
+                                options=[{'label': v, 'value': v} for v in ANGLE_TS_VERSIONS] or
+                                        [{'label': 'v2', 'value': 'v2'}],
+                                value=('v2' if 'v2' in ANGLE_TS_VERSIONS else
+                                       (ANGLE_TS_VERSIONS[0] if ANGLE_TS_VERSIONS else 'v2')),
+                                clearable=False
+                            ),
+                        ], width=4),
+                    ], className="mb-2"),
+                    dcc.Graph(id='angle-timeseries-graph', style={'height': '550px'})
                 ])
             ])
         ], width=12),
@@ -1015,6 +1076,86 @@ def update_time_series(camera):
         showlegend=True
     )
     
+    return fig
+
+
+# 関節角度時系列（GT / MediaPipe / 補正後）
+@app.callback(
+    Output('angle-timeseries-graph', 'figure'),
+    Input('selected-camera-store', 'data'),
+    Input('angle-ts-joint-dropdown', 'value'),
+    Input('angle-ts-version-dropdown', 'value')
+)
+def update_angle_timeseries(camera, joint, version):
+    """選択カメラ×関節の GT / MediaPipe / 補正後 角度時系列を表示"""
+    fig = go.Figure()
+    if not camera:
+        fig.update_layout(title="カメラが選択されていません")
+        return fig
+
+    df_ts = load_angle_timeseries(camera, joint, version)
+    if df_ts is None or df_ts.empty:
+        fig.update_layout(
+            title=f"データなし: {camera} / {joint} ({version})<br>"
+                  f"<sub>09_calibration_framework/scripts/batch_angle_timeseries.py で生成してください</sub>"
+        )
+        return fig
+
+    from plotly.subplots import make_subplots
+    fig = make_subplots(
+        rows=2, cols=1, shared_xaxes=True, row_heights=[0.65, 0.35],
+        vertical_spacing=0.06,
+        subplot_titles=("関節角度 [°]", "誤差 (推定 − GT) [°]")
+    )
+
+    # 上段: 角度
+    fig.add_trace(go.Scatter(
+        x=df_ts['frame'], y=df_ts['gt'], mode='lines',
+        name='GroundTruth', line=dict(color='black', width=2)
+    ), row=1, col=1)
+    fig.add_trace(go.Scatter(
+        x=df_ts['frame'], y=df_ts['mp'], mode='lines+markers',
+        name='MediaPipe (raw)', line=dict(color='#C44E52', width=1.5),
+        marker=dict(size=4)
+    ), row=1, col=1)
+    if 'corr' in df_ts.columns:
+        fig.add_trace(go.Scatter(
+            x=df_ts['frame'], y=df_ts['corr'], mode='lines+markers',
+            name='補正後', line=dict(color='#4C72B0', width=1.5, dash='dash'),
+            marker=dict(size=4)
+        ), row=1, col=1)
+
+    # 下段: 誤差
+    err_mp = df_ts['mp'] - df_ts['gt']
+    fig.add_trace(go.Scatter(
+        x=df_ts['frame'], y=err_mp, mode='lines',
+        name='誤差 (raw)', line=dict(color='#C44E52', width=1.5),
+        showlegend=False
+    ), row=2, col=1)
+    if 'corr' in df_ts.columns:
+        err_corr = df_ts['corr'] - df_ts['gt']
+        fig.add_trace(go.Scatter(
+            x=df_ts['frame'], y=err_corr, mode='lines',
+            name='誤差 (補正後)', line=dict(color='#4C72B0', width=1.5, dash='dash'),
+            showlegend=False
+        ), row=2, col=1)
+    fig.add_hline(y=0, line=dict(color='gray', width=0.8), row=2, col=1)
+
+    # MAE を注釈に
+    mae_raw = float(np.nanmean(np.abs(err_mp)))
+    title = f"{joint} @ {camera} [{version}]  |  MAE raw: {mae_raw:.1f}°"
+    if 'corr' in df_ts.columns:
+        mae_corr = float(np.nanmean(np.abs(df_ts['corr'] - df_ts['gt'])))
+        title += f"  →  補正後: {mae_corr:.1f}°"
+
+    fig.update_layout(
+        title=title,
+        hovermode='x unified',
+        legend=dict(orientation='h', yanchor='bottom', y=1.04, xanchor='right', x=1),
+        margin=dict(t=90),
+    )
+    fig.update_xaxes(title_text="Frame ID", row=2, col=1)
+
     return fig
 
 

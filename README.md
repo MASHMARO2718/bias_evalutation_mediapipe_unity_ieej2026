@@ -1,192 +1,273 @@
-# MotionTrack データ分析
+# MotionTrack — MediaPipe × Unity GT バイアス評価
 
-GroundTruth（Unity）と MediaPipe の3D関節データを比較・可視化するパイプラインです。
+Unity で取得した関節 Ground Truth（GT）と MediaPipe Pose 推定を比較し、視点依存バイアスの分析・補正・可視化を行うリポジトリです。
 
-**ソースコード（GitHub）:** [MASHMARO2718/bias_evalutation_mediapipe_unity_ieej2026](https://github.com/MASHMARO2718/bias_evalutation_mediapipe_unity_ieej2026)  
-`git clone https://github.com/MASHMARO2718/bias_evalutation_mediapipe_unity_ieej2026.git`
+**ソースコード:** [MASHMARO2718/bias_evalutation_mediapipe_unity_ieej2026](https://github.com/MASHMARO2718/bias_evalutation_mediapipe_unity_ieej2026)
+
+| 項目 | 現在の既定 |
+|------|------------|
+| データセット | **v2**（動画 + フレーム同期 GT） |
+| 切替 | ルート [`config.py`](config.py) の `DATASET_VERSION` |
+| 推奨パイプライン | `python run_v2_pipeline.py` |
+| 補正ダッシュボード | http://localhost:8051/（`09_calibration_framework`） |
+| 旧ダッシュボード | http://localhost:8050/（`07_dashboard`） |
 
 ---
 
-## クイックスタート（3コマンド）
+## クイックスタート（v2）
 
 ```bash
-# 1. 依存パッケージのインストール
 pip install -r requirements.txt
 
-# 2. データ処理（画像があればパイプラインを最後まで自動実行）
-python run.py
+# config.py で DATASET_VERSION = "v2" になっていること
 
-# 3. ダッシュボードは自動起動（--no-dashboard でスキップ可）
+# MediaPipe 済み前提で 03〜07, 09 を実行（ダッシュボード含む）
+python run_v2_pipeline.py
+
+# MediaPipe からやり直す場合
+python run_v2_pipeline.py --with-mediapipe
+
+# ダッシュボードを起動しない
+python run_v2_pipeline.py --no-dashboard
 ```
 
-ブラウザで **http://127.0.0.1:8050/** を開いてください。
+補正フレームワーク GUI のみ使う場合:
 
-※ `01_input_photos/` に画像がなければ MediaPipe をスキップし、02 以降を実行。`--no-mediapipe` で明示的にスキップも可能。
+```bash
+cd 09_calibration_framework/dashboard
+python app.py
+# → http://localhost:8051/
+```
+
+v1（JPG・同期ずれあり）を使う場合は `DATASET_VERSION = "v1"` にし、`python run.py` を使います（後述）。
 
 ---
 
-## コマンド一覧
+## データセット（v1 / v2）
 
-| コマンド | 説明 |
-|----------|------|
-| `python run.py` | 全パイプライン（01→02→03〜05→検証→07ダッシュボード既定ON） |
-| `python run.py --no-dashboard` | ダッシュボード起動なし |
-| `python run.py --no-mediapipe` | 02 以降のみ（02 が既にある場合） |
-| `python run.py --dashboard` | 方向角処理（ステップ4）のみ＋ダッシュボード起動（約1分） |
-| `python run.py --step 0` | MediaPipe のみ |
-| `python run.py --step 4` | ステップ4のみ |
-| `python 07_dashboard/app.py` | 可視化ダッシュボード起動 |
+| | **v1（旧）** | **v2（新・既定）** |
+|--|-------------|-------------------|
+| 収集 | 2025-12 | 2026-07 |
+| カメラ数 | 約 289（一部高さ層） | **576**（4 高さ × 144 位置） |
+| 入力 | `01_input_photos/` JPG × ~107/カメラ | `01_input_videos/` `video.mp4` + `gt_joints.csv` |
+| GT | `synced_joint_positions_*.csv` | `gt_joints.csv`（`frame_id` / `time_sec`） |
+| 同期 | 約 −3 フレームずれ | フレーム同期済み |
+| MediaPipe | `02_mediapipe_processed/` | `02_mediapipe_v2/mediapipe_processed_csv/` |
+| 論文 | IEEJ_01（提出済み） | IEEJ_02（補正・再評価） |
 
----
+高さ層は共通で `Y=0.5 / 1.0 / 1.5 / 2.0`。フォルダ名は `CapturedFrames_{X}_{Y}_{Z}`（メートル）。
 
-## データセットバージョン
-
-`config.py` の `DATASET_VERSION` を切り替えるだけで v1（旧）/v2（新）を使い分けられます。
-
-```python
-# config.py
-DATASET_VERSION = "v1"   # 旧データ（JPG・同期ずれあり）
-# DATASET_VERSION = "v2" # 新データ（動画・フレーム同期済み）
-```
-
-| | v1（旧） | v2（新） |
-|--|---------|---------|
-| 収集日 | 2025-12 | 2026-07 |
-| 入力形式 | `01_input_photos/` JPG × 107枚/カメラ | `01_input_videos/` video.mp4 + gt_joints.csv/カメラ |
-| GT 形式 | `synced_joint_positions_*.csv`（Unity グローバル時刻）| `gt_joints.csv`（frame_id/time_sec 同期済み）|
-| 同期 | 約 3 フレームのずれあり（IEEJ_01 論文のデータ） | フレーム完全同期 |
-| MediaPipe 出力 | `02_mediapipe_processed/` | `02_mediapipe_v2/`（処理後に生成）|
-
-詳細: [`docs/SYNC_ISSUE_REPORT.md`](docs/SYNC_ISSUE_REPORT.md)
+詳細: [`docs/SYNC_ISSUE_REPORT.md`](docs/SYNC_ISSUE_REPORT.md) · 進捗: [`docs/PROGRESS.md`](docs/PROGRESS.md)
 
 ---
 
 ## ディレクトリ構成
 
-番号付きフォルダは処理段階の目安です。**`run.py` が自動で回すのは** ステップ0（MediaPipe: `01`→`02`）〜ステップ5（`verify_paper_data.py`）と、完了時の **`07_dashboard` 起動（オプション）** までです。`06_theta_verification` と `08_dev` は手動実行用です。
-
 ```
-├── run.py / config.py / verify_paper_data.py
+.
+├── config.py                 # DATASET_VERSION / 入出力パス
 ├── requirements.txt
+├── run_v2_pipeline.py        # ★ v2 推奨エントリ（03〜07, 09）
+├── run.py                    # v1 向けエントリ（01→02→03〜05→07）
+├── run_04_06_07.py           # 04/06/07 部分実行
+├── verify_paper_data.py      # 論文用数値の整合チェック
+├── clean_pipeline_outputs.py
 ├── docker-compose.yml
 │
-├── docs/                     # 再現性・Zeval 対応表・同期ずれレポート
-├── docker/
-├── paper/
-├── tools/                    # 移行スクリプトなど
+├── 00_quickstart/            # 初見向けメモ（主に v1 手順）
 │
-├── 00_quickstart/
+├── 01_input_photos/          # [v1] JPG + synced GT（カメラごとサブフォルダ）
+├── 01_input_videos/          # [v2] video.mp4 + gt_joints.csv（576 カメラ）
 │
-├── # ─── v1 データ（旧・JPG キャプチャ・2025-12 収集） ────────────────────
-├── 01_input_photos/          # v1 raw: JPG × 107枚 + synced_joint_positions_*.csv
-├── 02_mediapipe_processed/   # v1 MediaPipe 出力（Y=0.5 … Y=2.0 配下に CSV）
+├── 02_mediapipe_processed/   # [v1] Pose CSV（Y=*/CapturedFrames_*.csv）
+├── 02_mediapipe_v2/          # [v2] Pose 処理・解析・オーバーレイ
+│   ├── mediapipe_video_processor.py
+│   ├── mediapipe_processed_csv/Y=*/
+│   ├── overlay_mp_landmarks.py      # CSV を video に骨格重ね（再検出なし）
+│   ├── overlay_videos/              # 重ね描き mp4 出力
+│   ├── run_ma_noise_rejection.py    # 移動平均ノイズ低減実験
+│   └── run_error_mc_analysis.py     # 関節誤差モンテカルロ解析
 │
-├── # ─── v2 データ（新・動画キャプチャ・2026-07 収集） ────────────────────
-├── 01_input_videos/          # v2 raw: video.mp4 + gt_joints.csv（フレーム同期済み）
-├── 02_mediapipe_v2/          # v2 MediaPipe 出力（処理後に生成される）
-│
-├── # ─── 処理スクリプト（v1/v2 共通・config.py で切り替え） ────────────────
-├── 03_joint_angle_mae/       # 3点角 MAE（層別 CSV・統合・ヒートマップ）
+├── 03_joint_angle_mae/       # 3点角 MAE（層別 CSV・統合表・ヒートマップ）
 ├── 04_max_angle_error/       # 最大角度誤差
 ├── 05_direction_detection/   # 方向角・相関（論文 processed 系の主出力）
-├── 06_theta_verification/    # θ・座標系検証（run.py 対象外）
-├── 07_dashboard/             # Dash 可視化（run.py 末尾で起動可）
-├── 08_dev/                   # 開発メモ（run.py 対象外）
-└── 09_calibration_framework/ # パラメトリック補正フレームワーク（研究提案実装）
+├── 06_theta_verification/    # θ・座標系検証
+├── 07_dashboard/             # Dash 可視化（port 8050）
+├── 08_dev/                   # 開発メモ
+├── 09_calibration_framework/ # ★ パラメトリック補正（研究本体 + GUI 8051）
+│
+├── docs/                     # プロジェクト横断ドキュメント
+├── paper/                    # IEEJ_01 / IEEJ_02
+├── tools/                    # GT アダプタ等
+├── docker/
+└── _backup_v1_outputs_*/     # v2 再実行前に退避した v1 出力
 ```
 
-MediaPipe の CSV は常に `02_mediapipe_processed/Y=0.5/`（v1）または `02_mediapipe_v2/mediapipe_processed_csv/Y=0.5/`（v2）のように `Y=` 接頭辞付きフォルダへ出ます。
+番号フォルダは処理段階の目安です。**現在の主戦場は v2 入力 → `02_mediapipe_v2` → `03`〜`07` → `09`** です。
 
 ---
 
-## Docker で実行
+## 各フォルダの中身（要点）
+
+### 入力
+
+| パス | 中身 |
+|------|------|
+| `01_input_videos/CapturedFrames_X_Y_Z/` | `video.mp4`（例: 1280×720, ~105f, 30fps）+ `gt_joints.csv` |
+| `01_input_photos/CapturedFrames_X_Y_Z/` | JPG 連番 + `synced_joint_positions_*.csv`（v1） |
+
+### MediaPipe（v2）
+
+| パス | 中身 |
+|------|------|
+| `mediapipe_processed_csv/Y=*/CapturedFrames_*.csv` | `frame_id, landmark, x, y, z, visibility`（画像正規化座標） |
+| `overlay_mp_landmarks.py` | 既存 CSV を動画に骨格重ね。左上に `現在/総フレーム` |
+| `overlay_videos/Y=*/` | `*_mp_overlay.mp4` |
+
+```bash
+# 1 カメラ
+python 02_mediapipe_v2/overlay_mp_landmarks.py --camera 3.0_1.0_0.0 --overwrite
+
+# 全カメラ
+python 02_mediapipe_v2/overlay_mp_landmarks.py
+```
+
+### 解析パイプライン（03〜07）
+
+| フォルダ | 役割 | 主な出力 |
+|----------|------|----------|
+| `03_joint_angle_mae/` | GT vs MP の 3 点関節角 MAE | `joint_angle_mae_csv/Y=*/` |
+| `04_max_angle_error/` | 最大角度誤差・ヒートマップ | `calculation/`, `max_angle_error_heatmap/` |
+| `05_direction_detection/` | 方位・相関・processed CSV | `output/processed_data/` 等 |
+| `06_theta_verification/` | 座標・θ 検証 | `output/`, `coordinate_fix_verification/` |
+| `07_dashboard/` | 旧統合ダッシュボード | port **8050** |
+
+### 補正フレームワーク（09）
+
+詳細は [`09_calibration_framework/README.md`](09_calibration_framework/README.md)。
+
+| サブパス | 役割 |
+|----------|------|
+| `src/` | Phase A/B・特徴量・評価のコア |
+| `experiments/` | `run_calibration.py` / `grid_search.py` / `run_evaluation.py` |
+| `scripts/` | 符号付き評価・時系列プロット・論文用図 |
+| `scripts/output/v1\|v2\|v3/` | 角度時系列（PNG/CSV）。v3 は横軸 0–120 固定 |
+| `dashboard/app.py` | Overview / Bin Explorer / Linear / Grid Search / Raw / **Angle Timeseries**（port **8051**） |
+| `docs/` | 補正モデル仕様・線形性・符号付き分析など |
+| `outputs/` | バイアステーブル・評価 CSV・図 |
+
+```bash
+cd 09_calibration_framework
+python experiments/run_calibration.py
+python experiments/run_evaluation.py
+
+# 角度時系列（全カメラ×関節）例
+python scripts/batch_angle_timeseries.py --output-version v3 --frame-xlim 0 120
+```
+
+### ドキュメント・論文・その他
+
+| パス | 内容 |
+|------|------|
+| `docs/SYNC_ISSUE_REPORT.md` | v1 同期ずれの原因と対策 |
+| `docs/UNITY_VIDEO_CAPTURE_PROMPT.md` | Unity 動画キャプチャ仕様 |
+| `docs/REPRODUCTION.md` | 再現手順 |
+| `docs/ZEVAL_DATASET_LAYOUT.md` | 外部データセット対応 |
+| `docs/MOVING_AVERAGE_NOISE_REJECTION.md` | 移動平均ノイズ低減 |
+| `docs/CAMERA_JOINT_ERROR_MC_ANALYSIS.md` | 関節誤差 MC 解析 |
+| `docs/PROGRESS.md` | 進捗メモ |
+| `paper/IEEJ_01/` | バイアス評価論文（提出済み） |
+| `paper/IEEJ_02/` | 局所線形補正論文（執筆中） |
+| `tools/` | GT アダプタ等のユーティリティ |
+| `_backup_v1_outputs_*/` | v2 上書き前の v1 結果退避 |
+
+---
+
+## コマンド早見表
+
+| コマンド | 用途 |
+|----------|------|
+| `python run_v2_pipeline.py` | **v2 本流**（MP 済み想定で 03〜09） |
+| `python run_v2_pipeline.py --with-mediapipe` | v2 を MediaPipe から |
+| `python run_v2_pipeline.py --step N` | 特定ステップのみ |
+| `python run.py` | **v1** 全パイプライン |
+| `python run.py --no-mediapipe` | v1 で 02 以降のみ |
+| `python 07_dashboard/app.py` | 旧 GUI → :8050 |
+| `python 09_calibration_framework/dashboard/app.py` | 補正 GUI → :8051 |
+| `python 02_mediapipe_v2/overlay_mp_landmarks.py` | MP 骨格オーバーレイ動画 |
+| `python verify_paper_data.py` | 論文数値の整合確認 |
+| `docker compose up --build` | Docker でダッシュボード（:8050） |
+
+`run_v2_pipeline.py` のステップ番号の目安:
+
+| `--step` | 内容 |
+|----------|------|
+| 0 | MediaPipe 動画処理 |
+| 1–2 | 03 関節角 MAE |
+| 3 | 04 最大角度誤差 |
+| 4 | 05 方向角 |
+| 5 | 06 θ 検証 |
+| 6 | 07 ダッシュボード |
+| 7 | 09 キャリブレーション |
+
+---
+
+## ダッシュボード
+
+| GUI | 起動 | URL | 主な用途 |
+|-----|------|-----|----------|
+| `07_dashboard` | `python 07_dashboard/app.py` | :8050 | 方向角・骨格など旧パイプライン可視化 |
+| `09` Calibration | `python 09_calibration_framework/dashboard/app.py` | :8051 | ビン構造・補正モデル・角度時系列（カメラマップ付き） |
+
+---
+
+## Docker
 
 ```bash
 docker compose up --build
 ```
 
-→ http://localhost:8050/ でダッシュボードにアクセス。`docker/` の Dockerfile を参照。
+→ http://localhost:8050/（詳細は `docker/`）
 
 ---
 
-## 補正フレームワーク（09_calibration_framework）
-
-MediaPipe Pose の視点依存バイアスをパラメトリックに補正する研究実装です。  
-詳細: [`09_calibration_framework/README.md`](09_calibration_framework/README.md)
-
-### ダッシュボード（ブラウザで動作・Cursor 不要）
-
-```bash
-cd 09_calibration_framework/dashboard
-pip install -r requirements.txt
-python app.py
-# → http://localhost:8051
-```
-
-| タブ | 内容 |
-|---|---|
-| Overview | モデル比較・per-layer MAE・評価サマリー |
-| Bin Explorer | カメラ位置 × 方位角ビン構造のインタラクティブ可視化 |
-| Linear Model | 局所線形 R² ヒートマップ・OLS 係数 β |
-| Grid Search | ハイパーパラメータ探索結果 |
-| Bin Reference | 全ビン種別（方位角・高さ・距離）の詳細一覧 |
-
-### 補正パイプラインの実行
-
-```bash
-cd 09_calibration_framework
-python experiments/run_calibration.py   # Phase A: バイアステーブル生成
-python experiments/grid_search.py       # bin 設定の最適化（任意）
-python experiments/run_evaluation.py    # Phase B: 全モデル評価
-```
-
-出力は `09_calibration_framework/outputs/` に保存されます。  
-実行結果レポート: [`09_calibration_framework/outputs/RUN_REPORT.md`](09_calibration_framework/outputs/RUN_REPORT.md)
-
----
-
-## 詳細
-
-- **初見向け**: `00_quickstart/`
-- **Docker**: `docker/`、`docker-compose.yml`
-- **論文・考察**: `paper/`（下記「論文フォルダ」参照）
-- **開発者向け**: `08_dev/README.md`
-- **旧パイプライン**: `run_full_pipeline.py` → `run.py` に委譲
-- **ローカル作業コピー Zeval_DataSet との対応**: `docs/ZEVAL_DATASET_LAYOUT.md`
-- **再現性・検証**: `docs/REPRODUCTION.md`、`python verify_paper_data.py`
-- **補正フレームワーク**: `09_calibration_framework/README.md`、`09_calibration_framework/CODE_REVIEW.md`
-
----
-
-## 論文フォルダ
+## 論文
 
 ```
 paper/
-├── IEEJ_01/                    論文 1: MediaPipe バイアス評価（提出済み）
-│   ├── README.md               LaTeX コンパイル手順・Overleaf 準備
-│   ├── source/
-│   │   ├── IEEJ_en/            英語版 LaTeX ソース（main.tex, ieej-e.cls, figs/）
-│   │   └── IEEJ_ja/            日本語版 LaTeX ソース
-│   └── submitted/              提出済み PDF・スライド
-│
-└── IEEJ_02/                    論文 2: 局所線形補正フレームワーク（執筆中）
-    ├── README.md               論文 2 全体説明・コンパイル手順
-    ├── IEEJ_en_calibration/    英語版（main.tex, ieej-e.cls, figs/） ← 主論文
-    │   └── README.md           図一覧・セクション構成・キーワード
-    └── IEEJ_ja_calibration/    日本語版（main.tex, generate_figs.py, PAPER_MEMO.md）
+├── IEEJ_01/                 # 論文1: MediaPipe バイアス評価（提出済み）
+│   ├── source/IEEJ_en|ja/
+│   └── submitted/
+└── IEEJ_02/                 # 論文2: 局所線形補正（執筆中）
+    ├── IEEJ_en_calibration/
+    └── IEEJ_ja_calibration/
 ```
-
-### 論文 2 のコンパイル
 
 ```bash
 cd paper/IEEJ_02/IEEJ_en_calibration
 pdflatex main.tex && pdflatex main.tex
 ```
 
-### 公開用リポジトリについて
+各ディレクトリの README を参照してください。
 
-解析コードは上記 GitHub を正とします。生画像・全中間 CSV は容量のため Git に含めない想定で、不足分は Zenodo のデータセット（DOI）から補完します。
+---
 
-**MediaPipe 中間 CSV（ZIP）**  
-DOI: [10.5281/zenodo.19296530](https://doi.org/10.5281/zenodo.19296530)  
-展開後の `mediapipe_processed_csv/Y=0.5/` … `Y=2.0/` を `02_mediapipe_processed/` 配下に置くと、以降のパイプラインと整合します（詳細はレコードの Description を参照）。Zenodo レコードの **Related works** に GitHub URL を登録しておくと、データとコードの対応が明確になります。
+## データ公開・大容量ファイル
+
+- 解析コードは GitHub を正とします。
+- `**/*.mp4` は `.gitignore` 対象（入力動画・オーバーレイはローカル保管）。
+- MediaPipe 中間 CSV（ZIP）: DOI [10.5281/zenodo.19296530](https://doi.org/10.5281/zenodo.19296530)  
+  展開後の `mediapipe_processed_csv/Y=0.5/` … `Y=2.0/` を `02_mediapipe_processed/` 配下に置くと v1 パイプラインと整合します。
+
+---
+
+## 関連ドキュメント（入口）
+
+| ドキュメント | 内容 |
+|--------------|------|
+| [`00_quickstart/`](00_quickstart/) | 最小手順（主に v1） |
+| [`docs/PROGRESS.md`](docs/PROGRESS.md) | 現状と作業ログ |
+| [`docs/REPRODUCTION.md`](docs/REPRODUCTION.md) | 再現性 |
+| [`09_calibration_framework/README.md`](09_calibration_framework/README.md) | 補正フレームワーク |
+| [`09_calibration_framework/docs/07_correction_models.md`](09_calibration_framework/docs/07_correction_models.md) | 補正モデル 2–6 の説明 |
+| [`08_dev/README.md`](08_dev/README.md) | 開発者メモ |

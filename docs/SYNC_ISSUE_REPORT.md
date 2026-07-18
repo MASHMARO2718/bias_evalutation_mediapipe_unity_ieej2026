@@ -163,7 +163,10 @@ gt_aligned = gt.assign(frame_id=gt["frame_id"] + LAG)  # LAG = 3
 
 ## 次のアクション
 
-- [ ] Unity プロジェクトの `CaptureSystemManager.cs` を動画キャプチャ方式に書き換える  
-      → `docs/UNITY_VIDEO_CAPTURE_PROMPT.md` のプロンプトを別エージェントに渡す
-- [ ] 新方式でデータを再収集し、同期確認（ラグ測定スクリプトで 0 フレームを確認）
-- [ ] 再収集データで MAE・R² を再評価し、IEEJ_02 論文の数値を更新する
+- [x] Unity プロジェクトの `FrameCapturer` / `SyncedJointRecorder` を動画キャプチャ方式に書き換え  
+      → 完了（2026-07-16）。新データは `01_input_videos/`
+- [x] 新方式でデータを再収集し、同期確認  
+      → v2 時系列でラグ **0±2 フレーム**（旧 −3）。比較図: `09_calibration_framework/scripts/output/v1` vs `v2`
+- [x] 再収集データで MAE・方向角・校正パイプラインを再実行（03〜07, 09）
+- [ ] IEEJ_02 論文の数値・図を v2 結果に更新する  
+      → 進捗全体: [`docs/PROGRESS.md`](PROGRESS.md)

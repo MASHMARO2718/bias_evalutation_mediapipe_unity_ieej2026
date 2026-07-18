@@ -11,10 +11,15 @@ Cursor なしでブラウザから使える。
     → http://localhost:8051 を開く
 
 タブ構成:
-    1. Overview       - モデル比較・補正前後 MAE・評価サマリー
-    2. Bin Explorer   - カメラ位置 × ビン構造の可視化（インタラクティブ）
-    3. Linear Model   - 局所線形モデルの R² ヒートマップ・係数
-    4. Grid Search    - ハイパーパラメータ探索結果
+    1. Overview          - モデル比較・補正前後 MAE・評価サマリー
+    2. Bin Explorer      - カメラ位置 × ビン構造の可視化（インタラクティブ）
+    3. Linear Model      - 局所線形モデルの R² ヒートマップ・係数
+    4. Grid Search       - ハイパーパラメータ探索結果
+    5. Bin Reference     - ビン定義・カバレッジ
+    6. Raw Data          - 生 MAE の多項式フィット
+    7. Angle Timeseries  - GT / MP / 補正後の時系列（v1/v2/v3）
+    8. Error · MC        - カメラマップ + フレーム×cosφ / |MC_n|
+    9. MA Noise          - 歩行直交ノイズ ε の移動平均除去
 """
 
 import json
@@ -28,6 +33,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from dash import Dash, Input, Output, State, callback_context, dcc, html
+from dash.exceptions import PreventUpdate
 
 # ── パス設定 ───────────────────────────────────────────────────────────────
 DASHBOARD_DIR = Path(__file__).resolve().parent
@@ -65,7 +71,178 @@ AZ_LABELS = ["N (0°)", "NE (45°)", "E (90°)", "SE (135°)",
              "S (180°)", "SW (225°)", "W (270°)", "NW (315°)"]
 BIN_COLORS = px.colors.qualitative.Set2[:8]
 
+# 角度時系列（scripts/batch_angle_timeseries.py の出力）
+ANGLE_TS_BASE = FRAMEWORK_DIR / "scripts" / "output"
+ANGLE_TS_VERSIONS = [v.name for v in sorted(ANGLE_TS_BASE.glob("v*")) if v.is_dir()]
+
+# Error · MC（02_mediapipe_v2/run_error_mc_analysis.py の出力・案 B）
+ERROR_MC_DIR = REPO_ROOT / "02_mediapipe_v2" / "error_mc_analysis" / "results"
+ERROR_MC_FRAME_CSV = ERROR_MC_DIR / "error_mc_frame_joint.csv"
+ERROR_MC_CAM_CSV = ERROR_MC_DIR / "error_mc_by_camera_joint.csv"
+ERROR_MC_JOINTS = [
+    "LEFT_SHOULDER", "RIGHT_SHOULDER",
+    "LEFT_ELBOW", "RIGHT_ELBOW",
+    "LEFT_WRIST", "RIGHT_WRIST",
+    "LEFT_KNEE", "RIGHT_KNEE",
+    "LEFT_ANKLE", "RIGHT_ANKLE",
+]
+_df_emc_frame = None
+_df_emc_meta = None
+
+
+def _load_emc_meta() -> pd.DataFrame:
+    """カメラ位置メタ（軽量）。なければフレーム CSV から一意化。"""
+    global _df_emc_meta
+    if _df_emc_meta is not None:
+        return _df_emc_meta
+    if ERROR_MC_CAM_CSV.exists():
+        m = pd.read_csv(ERROR_MC_CAM_CSV)
+        _df_emc_meta = (
+            m.groupby(
+                ["folder_name", "camera_x", "camera_y", "camera_z",
+                 "height_label", "azimuth_bin", "azimuth_label"],
+                as_index=False,
+            )
+            .size()
+            .drop(columns=["size"])
+        )
+    elif ERROR_MC_FRAME_CSV.exists():
+        print("  Loading Error.MC meta from frame CSV (slow once)...")
+        cols = ["folder_name", "camera_x", "camera_y", "camera_z",
+                "height_label", "azimuth_bin", "azimuth_label"]
+        m = pd.read_csv(ERROR_MC_FRAME_CSV, usecols=cols)
+        _df_emc_meta = m.drop_duplicates("folder_name")
+    else:
+        _df_emc_meta = pd.DataFrame(
+            columns=["folder_name", "camera_x", "camera_y", "camera_z",
+                     "height_label", "azimuth_bin", "azimuth_label"]
+        )
+    return _df_emc_meta
+
+
+def get_emc_frame() -> pd.DataFrame:
+    """フレーム×関節の詳細（初回のみロード）。"""
+    global _df_emc_frame
+    if _df_emc_frame is not None:
+        return _df_emc_frame
+    if not ERROR_MC_FRAME_CSV.exists():
+        _df_emc_frame = pd.DataFrame()
+        return _df_emc_frame
+    print(f"  Loading Error.MC frame data: {ERROR_MC_FRAME_CSV.name} ...")
+    cols = [
+        "folder_name", "frame_id", "joint", "height_label",
+        "error_dot_mc", "cos_phi", "abs_cos_phi", "Error_norm",
+        "MC_norm", "scale",
+    ]
+    _df_emc_frame = pd.read_csv(ERROR_MC_FRAME_CSV, usecols=cols)
+    print(f"  Error.MC rows: {len(_df_emc_frame)}")
+    return _df_emc_frame
+
+
+df_emc_meta = _load_emc_meta()
+print(f"  error_mc cameras: {len(df_emc_meta)}")
+
+# MA Noise（02_mediapipe_v2/run_ma_noise_rejection.py）
+MA_NOISE_DIR = REPO_ROOT / "02_mediapipe_v2" / "ma_noise_rejection" / "results"
+MA_NOISE_FRAME_CSV = MA_NOISE_DIR / "ma_noise_frame_joint.csv"
+MA_NOISE_CAM_CSV = MA_NOISE_DIR / "ma_noise_by_camera_joint.csv"
+_df_ma_frame = None
+_df_ma_meta = None
+
+
+def _load_ma_meta() -> pd.DataFrame:
+    global _df_ma_meta
+    if _df_ma_meta is not None:
+        return _df_ma_meta
+    if MA_NOISE_CAM_CSV.exists():
+        m = pd.read_csv(MA_NOISE_CAM_CSV)
+        _df_ma_meta = (
+            m.groupby(
+                ["folder_name", "camera_x", "camera_y", "camera_z",
+                 "height_label", "azimuth_bin", "azimuth_label"],
+                as_index=False,
+            )
+            .size()
+            .drop(columns=["size"])
+        )
+    else:
+        _df_ma_meta = pd.DataFrame(
+            columns=["folder_name", "camera_x", "camera_y", "camera_z",
+                     "height_label", "azimuth_bin", "azimuth_label"]
+        )
+    return _df_ma_meta
+
+
+def get_ma_frame() -> pd.DataFrame:
+    global _df_ma_frame
+    if _df_ma_frame is not None:
+        return _df_ma_frame
+    if not MA_NOISE_FRAME_CSV.exists():
+        _df_ma_frame = pd.DataFrame()
+        return _df_ma_frame
+    print(f"  Loading MA Noise frame data: {MA_NOISE_FRAME_CSV.name} ...")
+    cols = [
+        "folder_name", "frame_id", "joint", "height_label",
+        "eps_norm", "eps_bar_norm", "resid_norm", "threshold", "sigma",
+        "keep", "E_norm",
+    ]
+    _df_ma_frame = pd.read_csv(MA_NOISE_FRAME_CSV, usecols=cols)
+    print(f"  MA Noise rows: {len(_df_ma_frame)}")
+    return _df_ma_frame
+
+
+df_ma_meta = _load_ma_meta()
+print(f"  ma_noise cameras: {len(df_ma_meta)}")
+
+
+def list_angle_ts_cameras(version: str) -> list[str]:
+    """指定バージョンのカメラフォルダ名一覧（なければフラット CSV から推定）。"""
+    root = ANGLE_TS_BASE / version
+    if not root.exists():
+        return []
+    cams = sorted(d.name for d in root.glob("CapturedFrames_*") if d.is_dir())
+    if cams:
+        return cams
+    # v1 フラット配置フォールバック
+    names = set()
+    for p in root.glob("angle_timeseries_*_CapturedFrames_*.csv"):
+        # angle_timeseries_<joint>_<safe>.csv → カメラ復元は困難なので folder_name 列は使わず
+        # safe 名のままドロップダウンに出す
+        stem = p.stem
+        # angle_timeseries_L_Elbow_CapturedFrames_40_10_00
+        parts = stem.split("_", 3)  # joint may contain underscore; take after joint
+        # safer: strip known prefix + joint
+        for j in JOINTS:
+            pref = f"angle_timeseries_{j}_"
+            if stem.startswith(pref):
+                names.add(stem[len(pref):])
+                break
+    return sorted(names)
+
+
+def load_angle_timeseries(camera_name: str, joint: str, version: str = "v3"):
+    """一括生成済み CSV（frame, gt, mp, corr）を読む。無ければ None。"""
+    safe = camera_name.replace(".", "").replace("-", "m")
+    # camera_name がすでに safe 形式の場合もある
+    candidates = [
+        ANGLE_TS_BASE / version / camera_name / f"angle_timeseries_{joint}_{safe}.csv",
+        ANGLE_TS_BASE / version / camera_name / f"angle_timeseries_{joint}_{camera_name}.csv",
+        ANGLE_TS_BASE / version / f"angle_timeseries_{joint}_{safe}.csv",
+        ANGLE_TS_BASE / version / f"angle_timeseries_{joint}_{camera_name}.csv",
+    ]
+    # カメラフォルダ内の glob フォールバック
+    cam_dir = ANGLE_TS_BASE / version / camera_name
+    path = next((p for p in candidates if p.exists()), None)
+    if path is None and cam_dir.exists():
+        matches = list(cam_dir.glob(f"angle_timeseries_{joint}_*.csv"))
+        path = matches[0] if matches else None
+    if path is None:
+        return None
+    return pd.read_csv(path)
+
+
 print(f"  all_data: {len(df_all)} rows  eval: {len(df_eval)} rows  m4: {len(df_m4)} rows")
+print(f"  angle_ts versions: {ANGLE_TS_VERSIONS}")
 
 # ── アプリ初期化 ────────────────────────────────────────────────────────────
 app = Dash(
@@ -834,6 +1011,264 @@ def _make_raw_scatter(sub: pd.DataFrame, x_col: str, joint: str,
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Tab 7: Angle Timeseries (GT / MP / 補正後)
+# ─────────────────────────────────────────────────────────────────────────────
+def build_angle_ts_tab():
+    default_ver = "v3" if "v3" in ANGLE_TS_VERSIONS else (
+        ANGLE_TS_VERSIONS[-1] if ANGLE_TS_VERSIONS else "v3"
+    )
+    cams = list_angle_ts_cameras(default_ver)
+    default_cam = "CapturedFrames_0.0_1.0_3.0"
+    if default_cam not in cams and cams:
+        default_cam = cams[0]
+
+    return dbc.Container([
+        dbc.Row([
+            dbc.Col(dbc.Alert([
+                html.Strong("Angle Timeseries: "),
+                "マップ上のカメラをクリックして選択。"
+                " 緑〜色付き = 時系列データあり / 灰色 = なし。"
+                " 星マーク = 選択中。v3 は横軸 0–120 固定。",
+            ], color="info", className="mb-3 py-2"), width=12),
+        ]),
+        dbc.Row([
+            # 左: フィルタ + カメラマップ
+            dbc.Col([
+                card("フィルタ", [
+                    dbc.Label("データセット", style={"fontWeight": "600"}),
+                    dcc.Dropdown(
+                        id="ats-version",
+                        options=[{"label": v, "value": v} for v in ANGLE_TS_VERSIONS] or
+                                [{"label": "v3", "value": "v3"}],
+                        value=default_ver, clearable=False, className="mb-2",
+                    ),
+                    dbc.Label("カメラ高さ層", style={"fontWeight": "600"}),
+                    dcc.Dropdown(
+                        id="ats-layer",
+                        options=[{"label": l, "value": l} for l in LAYERS],
+                        value="Y=1.0", clearable=False, className="mb-2",
+                    ),
+                    dbc.Label("関節", style={"fontWeight": "600"}),
+                    dcc.Dropdown(
+                        id="ats-joint",
+                        options=[{"label": j, "value": j} for j in JOINTS],
+                        value="L_Knee", clearable=False, className="mb-2",
+                    ),
+                    dbc.Label("カメラ（詳細）", style={"fontWeight": "600"}),
+                    dcc.Dropdown(
+                        id="ats-camera",
+                        options=[{"label": c, "value": c} for c in cams],
+                        value=default_cam if cams else None,
+                        clearable=False, searchable=True,
+                    ),
+                    html.Div(id="ats-status", className="small text-muted mt-2"),
+                ]),
+                card(
+                    "カメラ位置マップ (XZ平面) — 色: 方位角ビン / クリックで選択",
+                    [
+                        dcc.Graph(
+                            id="ats-camera-map",
+                            style={"height": "420px"},
+                            config={"displayModeBar": False},
+                        ),
+                        html.Div([
+                            html.Span("● データあり（方位角ビン色）",
+                                      style={"marginRight": "12px", "fontSize": "0.8rem"}),
+                            html.Span("○ データなし",
+                                      style={"marginRight": "12px", "fontSize": "0.8rem",
+                                             "color": "#bbb"}),
+                            html.Span("★ 選択中",
+                                      style={"marginRight": "12px", "fontSize": "0.8rem",
+                                             "color": "#f1c40f"}),
+                            html.Span("✕ Origin",
+                                      style={"fontSize": "0.8rem", "color": "#c0392b"}),
+                        ], className="text-center mt-1"),
+                    ],
+                ),
+            ], width=5),
+            # 右: 時系列グラフ
+            dbc.Col(card(
+                "GT / MediaPipe / Corrected",
+                dcc.Graph(id="ats-graph", style={"height": "680px"},
+                          config={"displayModeBar": True}),
+            ), width=7),
+        ]),
+    ], fluid=True)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Tab 8: Error · MC（フレーム×内積）
+# ─────────────────────────────────────────────────────────────────────────────
+def build_error_mc_tab():
+    meta = df_emc_meta
+    has_data = not meta.empty
+    default_layer = "Y=1.0"
+    layer_cams = []
+    if has_data:
+        layer_cams = sorted(
+            meta.loc[meta["height_label"] == default_layer, "folder_name"].unique()
+        )
+    default_cam = "CapturedFrames_3.0_1.0_0.0"
+    if default_cam not in layer_cams and layer_cams:
+        default_cam = layer_cams[0]
+
+    alert = (
+        "マップでカメラを選択。横軸=Frame / 縦軸=cos φ "
+        "（Error·MC / (|Error||MC|)）。0 に近いほど視線と誤差が直交。"
+        " 案 B（腰相対 + Y反転 + スケール）。"
+        if has_data else
+        "データなし。先に "
+        "python 02_mediapipe_v2/run_error_mc_analysis.py を実行してください。"
+    )
+
+    return dbc.Container([
+        dbc.Row([
+            dbc.Col(dbc.Alert([
+                html.Strong("Error · MC: "),
+                alert,
+            ], color="info" if has_data else "warning", className="mb-3 py-2"), width=12),
+        ]),
+        dbc.Row([
+            dbc.Col([
+                card("フィルタ", [
+                    dbc.Label("カメラ高さ層", style={"fontWeight": "600"}),
+                    dcc.Dropdown(
+                        id="emc-layer",
+                        options=[{"label": l, "value": l} for l in LAYERS],
+                        value=default_layer, clearable=False, className="mb-2",
+                    ),
+                    dbc.Label("関節", style={"fontWeight": "600"}),
+                    dcc.Dropdown(
+                        id="emc-joint",
+                        options=[{"label": j, "value": j} for j in ERROR_MC_JOINTS],
+                        value="LEFT_KNEE", clearable=False, className="mb-2",
+                    ),
+                    dbc.Label("縦軸", style={"fontWeight": "600"}),
+                    dcc.Dropdown(
+                        id="emc-metric",
+                        options=[
+                            {"label": "cos φ（正規化内積）", "value": "cos_phi"},
+                            {"label": "|cos φ|", "value": "abs_cos_phi"},
+                            {"label": "Error · MC（生内積）", "value": "error_dot_mc"},
+                        ],
+                        value="cos_phi", clearable=False, className="mb-2",
+                    ),
+                    dbc.Label("カメラ（詳細）", style={"fontWeight": "600"}),
+                    dcc.Dropdown(
+                        id="emc-camera",
+                        options=[{"label": c, "value": c} for c in layer_cams],
+                        value=default_cam if layer_cams else None,
+                        clearable=False, searchable=True,
+                    ),
+                    html.Div(id="emc-status", className="small text-muted mt-2"),
+                ]),
+                card(
+                    "カメラ位置マップ (XZ平面) — 色: 方位角ビン / クリックで選択",
+                    [
+                        dcc.Graph(
+                            id="emc-camera-map",
+                            style={"height": "420px"},
+                            config={"displayModeBar": False},
+                        ),
+                        html.Div([
+                            html.Span("● Error·MC データあり",
+                                      style={"marginRight": "12px", "fontSize": "0.8rem"}),
+                            html.Span("○ なし",
+                                      style={"marginRight": "12px", "fontSize": "0.8rem",
+                                             "color": "#bbb"}),
+                            html.Span("★ 選択中",
+                                      style={"marginRight": "12px", "fontSize": "0.8rem",
+                                             "color": "#f1c40f"}),
+                            html.Span("✕ Origin",
+                                      style={"fontSize": "0.8rem", "color": "#c0392b"}),
+                        ], className="text-center mt-1"),
+                    ],
+                ),
+            ], width=5),
+            dbc.Col(card(
+                "Frame × cos φ（左軸） / |MC_n|=|C−GT_n|（右軸・関節ごと）",
+                dcc.Graph(id="emc-graph", style={"height": "680px"},
+                          config={"displayModeBar": True}),
+            ), width=7),
+        ]),
+    ], fluid=True)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Tab 9: MA Noise Rejection
+# ─────────────────────────────────────────────────────────────────────────────
+def build_ma_noise_tab():
+    meta = df_ma_meta
+    has_data = not meta.empty
+    default_layer = "Y=1.0"
+    layer_cams = []
+    if has_data:
+        layer_cams = sorted(
+            meta.loc[meta["height_label"] == default_layer, "folder_name"].unique()
+        )
+    default_cam = "CapturedFrames_3.0_1.0_0.0"
+    if default_cam not in layer_cams and layer_cams:
+        default_cam = layer_cams[0]
+
+    alert = (
+        "マップでカメラ選択。横軸=Frame / 縦軸=||ε||（歩行方向に直交する誤差）。"
+        " 緑破線=移動平均、灰点線=Kσ閾値、赤点=排除フレーム。"
+        if has_data else
+        "データなし。 python 02_mediapipe_v2/run_ma_noise_rejection.py を実行してください。"
+    )
+
+    return dbc.Container([
+        dbc.Row([
+            dbc.Col(dbc.Alert([
+                html.Strong("MA Noise: "),
+                alert,
+            ], color="info" if has_data else "warning", className="mb-3 py-2"), width=12),
+        ]),
+        dbc.Row([
+            dbc.Col([
+                card("フィルタ", [
+                    dbc.Label("カメラ高さ層", style={"fontWeight": "600"}),
+                    dcc.Dropdown(
+                        id="ma-layer",
+                        options=[{"label": l, "value": l} for l in LAYERS],
+                        value=default_layer, clearable=False, className="mb-2",
+                    ),
+                    dbc.Label("関節", style={"fontWeight": "600"}),
+                    dcc.Dropdown(
+                        id="ma-joint",
+                        options=[{"label": j, "value": j} for j in ERROR_MC_JOINTS],
+                        value="LEFT_KNEE", clearable=False, className="mb-2",
+                    ),
+                    dbc.Label("カメラ（詳細）", style={"fontWeight": "600"}),
+                    dcc.Dropdown(
+                        id="ma-camera",
+                        options=[{"label": c, "value": c} for c in layer_cams],
+                        value=default_cam if layer_cams else None,
+                        clearable=False, searchable=True,
+                    ),
+                    html.Div(id="ma-status", className="small text-muted mt-2"),
+                ]),
+                card(
+                    "カメラ位置マップ (XZ平面) — クリックで選択",
+                    [
+                        dcc.Graph(
+                            id="ma-camera-map",
+                            style={"height": "420px"},
+                            config={"displayModeBar": False},
+                        ),
+                    ],
+                ),
+            ], width=5),
+            dbc.Col(card(
+                "Frame × ||ε||  （MA + threshold + rejected）",
+                dcc.Graph(id="ma-graph", style={"height": "680px"},
+                          config={"displayModeBar": True}),
+            ), width=7),
+        ]),
+    ], fluid=True)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # レイアウト
 # ─────────────────────────────────────────────────────────────────────────────
 app.layout = dbc.Container([
@@ -842,18 +1277,21 @@ app.layout = dbc.Container([
             html.H4("Calibration Framework Dashboard",
                     className="text-primary mb-0",
                     style={"fontWeight": "700"}),
-            html.Small("MediaPipe Pose — Parametric Bias Correction · 2026-05-18",
+            html.Small("MediaPipe Pose — Bias · Angle TS · Error·MC · MA Noise",
                        className="text-muted"),
         ], className="py-3")
     ]),
 
     dbc.Tabs([
-        dbc.Tab(build_overview_tab(),    label="Overview",      tab_id="tab-overview"),
-        dbc.Tab(build_bin_explorer_tab(), label="Bin Explorer",  tab_id="tab-bin"),
-        dbc.Tab(build_linear_tab(),       label="Linear Model",  tab_id="tab-linear"),
-        dbc.Tab(build_gridsearch_tab(),   label="Grid Search",   tab_id="tab-gs"),
-        dbc.Tab(build_bin_reference_tab(), label="Bin Reference", tab_id="tab-ref"),
-        dbc.Tab(build_raw_data_tab(),     label="Raw Data",      tab_id="tab-raw"),
+        dbc.Tab(build_overview_tab(),     label="Overview",          tab_id="tab-overview"),
+        dbc.Tab(build_bin_explorer_tab(), label="Bin Explorer",      tab_id="tab-bin"),
+        dbc.Tab(build_linear_tab(),       label="Linear Model",      tab_id="tab-linear"),
+        dbc.Tab(build_gridsearch_tab(),   label="Grid Search",       tab_id="tab-gs"),
+        dbc.Tab(build_bin_reference_tab(), label="Bin Reference",    tab_id="tab-ref"),
+        dbc.Tab(build_raw_data_tab(),     label="Raw Data",          tab_id="tab-raw"),
+        dbc.Tab(build_angle_ts_tab(),     label="Angle Timeseries",  tab_id="tab-ats"),
+        dbc.Tab(build_error_mc_tab(),     label="Error · MC",        tab_id="tab-emc"),
+        dbc.Tab(build_ma_noise_tab(),     label="MA Noise",          tab_id="tab-ma"),
     ], id="main-tabs", active_tab="tab-overview"),
 
 ], fluid=True)
@@ -1364,6 +1802,776 @@ def update_raw_plots(joint, layers, sample):
         _make_raw_scatter(sub, "sin_azimuth",   joint, "sin(方位角)"),
         _make_raw_scatter(sub, "cos_azimuth",   joint, "cos(方位角)"),
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Callbacks: Angle Timeseries
+# ─────────────────────────────────────────────────────────────────────────────
+def _ats_layer_cameras(layer: str) -> list[str]:
+    """高さ層内の全カメラ（folder_name）。"""
+    return sorted(
+        df_all.loc[df_all["height_label"] == layer, "folder_name"].unique()
+    )
+
+
+@app.callback(
+    Output("ats-camera", "options"),
+    Output("ats-camera", "value"),
+    Input("ats-version", "value"),
+    Input("ats-layer", "value"),
+    State("ats-camera", "value"),
+)
+def update_ats_camera_list(version, layer, current):
+    layer = layer or "Y=1.0"
+    version = version or "v3"
+    layer_cams = _ats_layer_cameras(layer)
+    available = set(list_angle_ts_cameras(version))
+    options = [
+        {"label": (c if c in available else f"{c} (no data)"), "value": c}
+        for c in layer_cams
+    ]
+    with_data = [c for c in layer_cams if c in available]
+    if current and current in layer_cams:
+        value = current
+    else:
+        prefer = f"CapturedFrames_0.0_{layer.replace('Y=', '')}_3.0"
+        if prefer in with_data:
+            value = prefer
+        else:
+            value = with_data[0] if with_data else (layer_cams[0] if layer_cams else None)
+    return options, value
+
+
+@app.callback(
+    Output("ats-camera-map", "figure"),
+    Input("ats-version", "value"),
+    Input("ats-layer", "value"),
+    Input("ats-camera", "value"),
+    Input("ats-joint", "value"),
+)
+def update_ats_camera_map(version, layer, selected_cam, joint):
+    """Bin Explorer と同系の XZ マップ。クリック選択・選択中は星。"""
+    sub = df_all[df_all["height_label"] == (layer or "Y=1.0")].drop_duplicates(
+        "folder_name"
+    ).copy()
+    available = set(list_angle_ts_cameras(version or "v3"))
+
+    fig = go.Figure()
+    for az_bin in range(8):
+        grp = sub[sub["azimuth_bin"] == az_bin]
+        if grp.empty:
+            continue
+
+        has_data = grp["folder_name"].isin(available)
+        # データあり
+        g_ok = grp[has_data]
+        if not g_ok.empty:
+            is_sel = g_ok["folder_name"] == selected_cam
+            # 非選択
+            g_other = g_ok[~is_sel]
+            if not g_other.empty:
+                fig.add_trace(go.Scatter(
+                    x=g_other["camera_x"], y=g_other["camera_z"],
+                    mode="markers",
+                    name=f"Bin {az_bin}: {AZ_LABELS[az_bin]}",
+                    customdata=g_other["folder_name"],
+                    marker=dict(
+                        size=11, color=BIN_COLORS[az_bin], symbol="circle",
+                        line=dict(width=0), opacity=0.85,
+                    ),
+                    text=[
+                        f"<b>{r.folder_name}</b><br>"
+                        f"({r.camera_x:.1f}, {r.camera_z:.1f})<br>"
+                        f"az={r.azimuth_deg:.1f}° · d={r.distance:.2f}m<br>"
+                        f"Bin {az_bin}: {AZ_LABELS[az_bin]}"
+                        for _, r in g_other.iterrows()
+                    ],
+                    hovertemplate="%{text}<extra></extra>",
+                    showlegend=True,
+                ))
+            # 選択中（星）
+            g_sel = g_ok[is_sel]
+            if not g_sel.empty:
+                fig.add_trace(go.Scatter(
+                    x=g_sel["camera_x"], y=g_sel["camera_z"],
+                    mode="markers",
+                    name="選択中",
+                    customdata=g_sel["folder_name"],
+                    marker=dict(
+                        size=18, color=BIN_COLORS[az_bin], symbol="star",
+                        line=dict(width=2, color="black"), opacity=1.0,
+                    ),
+                    text=[
+                        f"<b>★ {r.folder_name}</b><br>"
+                        f"({r.camera_x:.1f}, {r.camera_z:.1f})<br>"
+                        f"az={r.azimuth_deg:.1f}° · Bin {az_bin}"
+                        for _, r in g_sel.iterrows()
+                    ],
+                    hovertemplate="%{text}<extra></extra>",
+                    showlegend=False,
+                ))
+
+        # データなし（灰色）
+        g_miss = grp[~has_data]
+        if not g_miss.empty:
+            fig.add_trace(go.Scatter(
+                x=g_miss["camera_x"], y=g_miss["camera_z"],
+                mode="markers",
+                name="データなし",
+                legendgroup="missing",
+                customdata=g_miss["folder_name"],
+                marker=dict(
+                    size=9, color="#d0d0d0", symbol="circle",
+                    line=dict(width=1, color="#aaa"), opacity=0.7,
+                ),
+                text=[
+                    f"<b>{r.folder_name}</b><br>時系列データなし ({version})"
+                    for _, r in g_miss.iterrows()
+                ],
+                hovertemplate="%{text}<extra></extra>",
+                showlegend=(az_bin == 0),
+            ))
+
+    # 選択カメラが高さ層外のときも強調（稀）
+    if selected_cam and selected_cam not in set(sub["folder_name"]):
+        row = df_all[df_all["folder_name"] == selected_cam].head(1)
+        if not row.empty:
+            r = row.iloc[0]
+            fig.add_trace(go.Scatter(
+                x=[r.camera_x], y=[r.camera_z],
+                mode="markers", name="選択中（他層）",
+                customdata=[selected_cam],
+                marker=dict(size=18, color="#f1c40f", symbol="star",
+                            line=dict(width=2, color="black")),
+                hovertemplate=f"<b>★ {selected_cam}</b> (他の高さ層)<extra></extra>",
+            ))
+
+    fig.add_trace(go.Scatter(
+        x=[0], y=[0], mode="markers",
+        marker=dict(size=16, color="red", symbol="x",
+                    line=dict(width=3, color="darkred")),
+        name="Origin (bot)",
+        hovertemplate="<b>Bot / Origin</b><extra></extra>",
+    ))
+
+    # データ範囲に合わせつつ正方形
+    if not sub.empty:
+        pad = 1.0
+        xmax = float(max(sub["camera_x"].abs().max(), sub["camera_z"].abs().max()) + pad)
+        xmax = max(xmax, 7.0)
+    else:
+        xmax = 7.0
+
+    fig.update_layout(
+        height=400, margin=dict(t=10, b=10, l=40, r=10),
+        xaxis=dict(title="Camera X (m)", range=[-xmax, xmax], dtick=1, gridcolor="#eee"),
+        yaxis=dict(title="Camera Z (m)", range=[-xmax, xmax], dtick=1, gridcolor="#eee",
+                   scaleanchor="x", scaleratio=1),
+        plot_bgcolor="white",
+        legend=dict(orientation="h", y=-0.18, font=dict(size=9)),
+        hovermode="closest",
+        uirevision=f"ats-map-{layer}",
+        title=dict(
+            text=f"{layer} · {joint or ''} · {version}",
+            font=dict(size=12), x=0.01, xanchor="left",
+        ),
+    )
+    return fig
+
+
+@app.callback(
+    Output("ats-camera", "value", allow_duplicate=True),
+    Input("ats-camera-map", "clickData"),
+    prevent_initial_call=True,
+)
+def ats_map_click(clickData):
+    if not clickData or "points" not in clickData:
+        raise PreventUpdate
+    pt = clickData["points"][0]
+    cam = pt.get("customdata")
+    if not cam:
+        raise PreventUpdate
+    # customdata が list の場合あり
+    if isinstance(cam, (list, tuple)):
+        cam = cam[0]
+    return cam
+
+
+@app.callback(
+    Output("ats-graph", "figure"),
+    Output("ats-status", "children"),
+    Input("ats-version", "value"),
+    Input("ats-joint", "value"),
+    Input("ats-camera", "value"),
+)
+def update_ats_graph(version, joint, camera):
+    from plotly.subplots import make_subplots
+
+    if not camera or not joint:
+        fig = go.Figure()
+        fig.update_layout(title="カメラ / 関節を選択してください")
+        return fig, "未選択"
+
+    df = load_angle_timeseries(camera, joint, version or "v3")
+    if df is None or df.empty:
+        fig = go.Figure()
+        fig.update_layout(
+            title=f"データなし: {camera} / {joint} ({version})",
+            annotations=[dict(
+                text="scripts/batch_angle_timeseries.py で生成してください",
+                xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False,
+            )],
+        )
+        return fig, f"missing · {version}"
+
+    fig = make_subplots(
+        rows=2, cols=1, shared_xaxes=True, row_heights=[0.65, 0.35],
+        vertical_spacing=0.07,
+        subplot_titles=("関節角度 [°]", "絶対誤差 |推定 − GT| [°]"),
+    )
+    frames = df["frame"]
+    fig.add_trace(go.Scatter(
+        x=frames, y=df["gt"], mode="lines", name="Ground Truth",
+        line=dict(color="#2ecc71", width=2),
+    ), row=1, col=1)
+    fig.add_trace(go.Scatter(
+        x=frames, y=df["mp"], mode="lines", name="MediaPipe (raw)",
+        line=dict(color="#e74c3c", width=1.5),
+    ), row=1, col=1)
+    if "corr" in df.columns:
+        fig.add_trace(go.Scatter(
+            x=frames, y=df["corr"], mode="lines", name="Corrected (Model 4)",
+            line=dict(color="#3498db", width=1.6, dash="dash"),
+        ), row=1, col=1)
+
+    err_mp = (df["mp"] - df["gt"]).abs()
+    fig.add_trace(go.Scatter(
+        x=frames, y=err_mp, mode="lines", name="|MP−GT|",
+        line=dict(color="#e74c3c", width=1.2), showlegend=False,
+        fill="tozeroy", fillcolor="rgba(231,76,60,0.25)",
+    ), row=2, col=1)
+    if "corr" in df.columns:
+        err_c = (df["corr"] - df["gt"]).abs()
+        fig.add_trace(go.Scatter(
+            x=frames, y=err_c, mode="lines", name="|Corr−GT|",
+            line=dict(color="#3498db", width=1.2), showlegend=False,
+            fill="tozeroy", fillcolor="rgba(52,152,219,0.25)",
+        ), row=2, col=1)
+
+    both = df["mp"].notna() & df["gt"].notna()
+    mae_raw = float((df.loc[both, "mp"] - df.loc[both, "gt"]).abs().mean()) if both.any() else float("nan")
+    if "corr" in df.columns:
+        both_c = df["corr"].notna() & df["gt"].notna()
+        mae_corr = float((df.loc[both_c, "corr"] - df.loc[both_c, "gt"]).abs().mean()) if both_c.any() else float("nan")
+    else:
+        mae_corr = float("nan")
+
+    title = f"{joint} @ {camera} [{version}]"
+    if np.isfinite(mae_raw):
+        title += f"  |  MAE raw: {mae_raw:.1f}°"
+    if np.isfinite(mae_corr):
+        title += f"  →  corr: {mae_corr:.1f}°"
+
+    fig.update_layout(
+        title=title,
+        hovermode="x unified",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin=dict(t=80, b=40),
+        plot_bgcolor="white",
+    )
+    # v3 は 0–120 固定（CSV も揃っている）
+    if version == "v3":
+        fig.update_xaxes(range=[0, 120], row=1, col=1)
+        fig.update_xaxes(range=[0, 120], title_text="Frame", row=2, col=1)
+    else:
+        fig.update_xaxes(title_text="Frame", row=2, col=1)
+    fig.update_yaxes(rangemode="tozero", row=2, col=1)
+
+    status = (
+        f"{version} · frames {int(df['frame'].min())}–{int(df['frame'].max())} "
+        f"· GT {df['gt'].notna().sum()} · MP {df['mp'].notna().sum()}"
+    )
+    return fig, status
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Callbacks: Error · MC
+# ─────────────────────────────────────────────────────────────────────────────
+def _emc_available_set() -> set:
+    if df_emc_meta.empty:
+        return set()
+    return set(df_emc_meta["folder_name"].tolist())
+
+
+@app.callback(
+    Output("emc-camera", "options"),
+    Output("emc-camera", "value"),
+    Input("emc-layer", "value"),
+    State("emc-camera", "value"),
+)
+def update_emc_camera_list(layer, current):
+    layer = layer or "Y=1.0"
+    available = _emc_available_set()
+    # マップ用: df_all の当該層 + Error·MC 有無
+    layer_cams = sorted(
+        df_all.loc[df_all["height_label"] == layer, "folder_name"].unique()
+    )
+    options = [
+        {"label": (c if c in available else f"{c} (no data)"), "value": c}
+        for c in layer_cams
+    ]
+    with_data = [c for c in layer_cams if c in available]
+    if current and current in layer_cams:
+        value = current
+    else:
+        y = layer.replace("Y=", "")
+        for prefer in (
+            f"CapturedFrames_3.0_{y}_0.0",
+            f"CapturedFrames_0.0_{y}_3.0",
+        ):
+            if prefer in with_data:
+                value = prefer
+                break
+        else:
+            value = with_data[0] if with_data else (layer_cams[0] if layer_cams else None)
+    return options, value
+
+
+@app.callback(
+    Output("emc-camera-map", "figure"),
+    Input("emc-layer", "value"),
+    Input("emc-camera", "value"),
+    Input("emc-joint", "value"),
+)
+def update_emc_camera_map(layer, selected_cam, joint):
+    sub = df_all[df_all["height_label"] == (layer or "Y=1.0")].drop_duplicates(
+        "folder_name"
+    ).copy()
+    available = _emc_available_set()
+
+    fig = go.Figure()
+    for az_bin in range(8):
+        grp = sub[sub["azimuth_bin"] == az_bin]
+        if grp.empty:
+            continue
+        has_data = grp["folder_name"].isin(available)
+        g_ok = grp[has_data]
+        if not g_ok.empty:
+            is_sel = g_ok["folder_name"] == selected_cam
+            g_other = g_ok[~is_sel]
+            if not g_other.empty:
+                fig.add_trace(go.Scatter(
+                    x=g_other["camera_x"], y=g_other["camera_z"],
+                    mode="markers",
+                    name=f"Bin {az_bin}: {AZ_LABELS[az_bin]}",
+                    customdata=g_other["folder_name"],
+                    marker=dict(
+                        size=11, color=BIN_COLORS[az_bin], symbol="circle",
+                        opacity=0.85,
+                    ),
+                    text=[
+                        f"<b>{r.folder_name}</b><br>"
+                        f"({r.camera_x:.1f}, {r.camera_z:.1f}) · Bin {az_bin}"
+                        for _, r in g_other.iterrows()
+                    ],
+                    hovertemplate="%{text}<extra></extra>",
+                ))
+            g_sel = g_ok[is_sel]
+            if not g_sel.empty:
+                fig.add_trace(go.Scatter(
+                    x=g_sel["camera_x"], y=g_sel["camera_z"],
+                    mode="markers", name="選択中",
+                    customdata=g_sel["folder_name"],
+                    marker=dict(
+                        size=18, color=BIN_COLORS[az_bin], symbol="star",
+                        line=dict(width=2, color="black"),
+                    ),
+                    text=[f"<b>★ {r.folder_name}</b>" for _, r in g_sel.iterrows()],
+                    hovertemplate="%{text}<extra></extra>",
+                    showlegend=False,
+                ))
+        g_miss = grp[~has_data]
+        if not g_miss.empty:
+            fig.add_trace(go.Scatter(
+                x=g_miss["camera_x"], y=g_miss["camera_z"],
+                mode="markers", name="データなし",
+                legendgroup="missing",
+                customdata=g_miss["folder_name"],
+                marker=dict(
+                    size=9, color="#d0d0d0", symbol="circle",
+                    line=dict(width=1, color="#aaa"), opacity=0.7,
+                ),
+                text=[f"<b>{r.folder_name}</b><br>Error·MC なし"
+                      for _, r in g_miss.iterrows()],
+                hovertemplate="%{text}<extra></extra>",
+                showlegend=(az_bin == 0),
+            ))
+
+    fig.add_trace(go.Scatter(
+        x=[0], y=[0], mode="markers",
+        marker=dict(size=16, color="red", symbol="x",
+                    line=dict(width=3, color="darkred")),
+        name="Origin (bot)",
+        hovertemplate="<b>Bot / Origin</b><extra></extra>",
+    ))
+
+    xmax = 7.0
+    if not sub.empty:
+        xmax = float(max(sub["camera_x"].abs().max(),
+                         sub["camera_z"].abs().max()) + 1.0)
+        xmax = max(xmax, 7.0)
+
+    fig.update_layout(
+        height=400, margin=dict(t=30, b=10, l=40, r=10),
+        xaxis=dict(title="Camera X (m)", range=[-xmax, xmax], dtick=1, gridcolor="#eee"),
+        yaxis=dict(title="Camera Z (m)", range=[-xmax, xmax], dtick=1, gridcolor="#eee",
+                   scaleanchor="x", scaleratio=1),
+        plot_bgcolor="white",
+        legend=dict(orientation="h", y=-0.18, font=dict(size=9)),
+        hovermode="closest",
+        uirevision=f"emc-map-{layer}",
+        title=dict(text=f"{layer} · {joint or ''}", font=dict(size=12),
+                   x=0.01, xanchor="left"),
+    )
+    return fig
+
+
+@app.callback(
+    Output("emc-camera", "value", allow_duplicate=True),
+    Input("emc-camera-map", "clickData"),
+    prevent_initial_call=True,
+)
+def emc_map_click(clickData):
+    if not clickData or "points" not in clickData:
+        raise PreventUpdate
+    cam = clickData["points"][0].get("customdata")
+    if not cam:
+        raise PreventUpdate
+    if isinstance(cam, (list, tuple)):
+        cam = cam[0]
+    return cam
+
+
+@app.callback(
+    Output("emc-graph", "figure"),
+    Output("emc-status", "children"),
+    Input("emc-camera", "value"),
+    Input("emc-joint", "value"),
+    Input("emc-metric", "value"),
+)
+def update_emc_graph(camera, joint, metric):
+    metric = metric or "cos_phi"
+    metric_labels = {
+        "cos_phi": "cos φ",
+        "abs_cos_phi": "|cos φ|",
+        "error_dot_mc": "Error · MC（生内積）",
+    }
+    ylabel = metric_labels.get(metric, metric)
+
+    if not camera or not joint:
+        fig = go.Figure()
+        fig.update_layout(title="カメラ / 関節を選択してください")
+        return fig, "未選択"
+
+    df = get_emc_frame()
+    if df.empty:
+        fig = go.Figure()
+        fig.update_layout(
+            title="Error·MC データなし",
+            annotations=[dict(
+                text="python 02_mediapipe_v2/run_error_mc_analysis.py",
+                xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False,
+            )],
+        )
+        return fig, "missing data"
+
+    sub = df[(df["folder_name"] == camera) & (df["joint"] == joint)].sort_values(
+        "frame_id"
+    )
+    if sub.empty:
+        fig = go.Figure()
+        fig.update_layout(title=f"データなし: {camera} / {joint}")
+        return fig, f"no rows · {camera}"
+
+    y = sub[metric]
+    mc_norm = sub["MC_norm"]
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=sub["frame_id"], y=y,
+        mode="lines+markers",
+        name=ylabel,
+        line=dict(color="#2980b9", width=2),
+        marker=dict(size=5),
+        yaxis="y",
+        hovertemplate=(
+            "frame=%{x}<br>"
+            + f"{ylabel}=%{{y:.4f}}<br>"
+            + "Error·MC=%{customdata[0]:.4f}<br>"
+            + "|Error|=%{customdata[1]:.3f}<br>"
+            + "|MC|=%{customdata[2]:.3f} m<extra></extra>"
+        ),
+        customdata=np.column_stack([
+            sub["error_dot_mc"].to_numpy(),
+            sub["Error_norm"].to_numpy(),
+            mc_norm.to_numpy(),
+        ]),
+    ))
+    fig.add_trace(go.Scatter(
+        x=sub["frame_id"], y=mc_norm,
+        mode="lines",
+        name="|MC_n| = |C − GT_n|",
+        line=dict(color="#e67e22", width=2, dash="dash"),
+        yaxis="y2",
+        hovertemplate="frame=%{x}<br>|MC_n|=%{y:.3f} m<extra></extra>",
+    ))
+    # cos φ = 0 → Error ⊥ MC
+    fig.add_hline(y=0, line_dash="dot", line_color="#95a5a6",
+                  annotation_text="cos φ = 0（直交）",
+                  annotation_position="bottom right")
+
+    mean_v = float(y.mean())
+    med_v = float(y.median())
+    mean_mc = float(mc_norm.mean())
+    layout_yaxis = dict(
+        title=dict(text=ylabel, font=dict(color="#2980b9")),
+        tickfont=dict(color="#2980b9"),
+        gridcolor="#eee",
+        zeroline=True, zerolinecolor="#bbb",
+    )
+    if metric == "cos_phi":
+        layout_yaxis["range"] = [-1.05, 1.05]
+    elif metric == "abs_cos_phi":
+        layout_yaxis["range"] = [-0.05, 1.05]
+
+    fig.update_layout(
+        title=(
+            f"{joint} @ {camera}  |  mean {ylabel}={mean_v:.3f}  "
+            f"median={med_v:.3f}  |  mean |MC|={mean_mc:.2f} m"
+        ),
+        xaxis=dict(title="Frame", gridcolor="#eee"),
+        yaxis=layout_yaxis,
+        yaxis2=dict(
+            title=dict(text="|MC_n| [m]", font=dict(color="#e67e22")),
+            tickfont=dict(color="#e67e22"),
+            overlaying="y",
+            side="right",
+            showgrid=False,
+            rangemode="tozero",
+        ),
+        hovermode="x unified",
+        margin=dict(t=60, b=40, r=60),
+        plot_bgcolor="white",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    )
+
+    status = (
+        f"{camera} · {joint} · frames {int(sub['frame_id'].min())}–"
+        f"{int(sub['frame_id'].max())} (n={len(sub)}) · "
+        f"mean {ylabel}={mean_v:.3f} · mean |MC|={mean_mc:.2f} m"
+    )
+    return fig, status
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Callbacks: MA Noise
+# ─────────────────────────────────────────────────────────────────────────────
+def _ma_available_set() -> set:
+    if df_ma_meta.empty:
+        return set()
+    return set(df_ma_meta["folder_name"].tolist())
+
+
+@app.callback(
+    Output("ma-camera", "options"),
+    Output("ma-camera", "value"),
+    Input("ma-layer", "value"),
+    State("ma-camera", "value"),
+)
+def update_ma_camera_list(layer, current):
+    layer = layer or "Y=1.0"
+    available = _ma_available_set()
+    layer_cams = sorted(
+        df_all.loc[df_all["height_label"] == layer, "folder_name"].unique()
+    )
+    options = [
+        {"label": (c if c in available else f"{c} (no data)"), "value": c}
+        for c in layer_cams
+    ]
+    with_data = [c for c in layer_cams if c in available]
+    if current and current in layer_cams:
+        value = current
+    else:
+        y = layer.replace("Y=", "")
+        prefer = f"CapturedFrames_3.0_{y}_0.0"
+        value = prefer if prefer in with_data else (
+            with_data[0] if with_data else (layer_cams[0] if layer_cams else None)
+        )
+    return options, value
+
+
+@app.callback(
+    Output("ma-camera-map", "figure"),
+    Input("ma-layer", "value"),
+    Input("ma-camera", "value"),
+    Input("ma-joint", "value"),
+)
+def update_ma_camera_map(layer, selected_cam, joint):
+    sub = df_all[df_all["height_label"] == (layer or "Y=1.0")].drop_duplicates(
+        "folder_name"
+    ).copy()
+    available = _ma_available_set()
+    fig = go.Figure()
+    for az_bin in range(8):
+        grp = sub[sub["azimuth_bin"] == az_bin]
+        if grp.empty:
+            continue
+        has_data = grp["folder_name"].isin(available)
+        g_ok = grp[has_data]
+        if not g_ok.empty:
+            is_sel = g_ok["folder_name"] == selected_cam
+            g_other = g_ok[~is_sel]
+            if not g_other.empty:
+                fig.add_trace(go.Scatter(
+                    x=g_other["camera_x"], y=g_other["camera_z"],
+                    mode="markers",
+                    name=f"Bin {az_bin}: {AZ_LABELS[az_bin]}",
+                    customdata=g_other["folder_name"],
+                    marker=dict(size=11, color=BIN_COLORS[az_bin], opacity=0.85),
+                    hovertemplate="%{customdata}<extra></extra>",
+                ))
+            g_sel = g_ok[is_sel]
+            if not g_sel.empty:
+                fig.add_trace(go.Scatter(
+                    x=g_sel["camera_x"], y=g_sel["camera_z"],
+                    mode="markers", name="選択中",
+                    customdata=g_sel["folder_name"],
+                    marker=dict(
+                        size=18, color=BIN_COLORS[az_bin], symbol="star",
+                        line=dict(width=2, color="black"),
+                    ),
+                    hovertemplate="★ %{customdata}<extra></extra>",
+                    showlegend=False,
+                ))
+        g_miss = grp[~has_data]
+        if not g_miss.empty:
+            fig.add_trace(go.Scatter(
+                x=g_miss["camera_x"], y=g_miss["camera_z"],
+                mode="markers", name="データなし",
+                customdata=g_miss["folder_name"],
+                marker=dict(size=9, color="#d0d0d0"),
+                hovertemplate="%{customdata}<extra></extra>",
+                showlegend=(az_bin == 0),
+            ))
+    fig.add_trace(go.Scatter(
+        x=[0], y=[0], mode="markers",
+        marker=dict(size=16, color="red", symbol="x"),
+        name="Origin",
+    ))
+    xmax = 7.0
+    if not sub.empty:
+        xmax = max(7.0, float(max(sub["camera_x"].abs().max(),
+                                  sub["camera_z"].abs().max()) + 1))
+    fig.update_layout(
+        height=400, margin=dict(t=30, b=10, l=40, r=10),
+        xaxis=dict(title="Camera X (m)", range=[-xmax, xmax], dtick=1, gridcolor="#eee"),
+        yaxis=dict(title="Camera Z (m)", range=[-xmax, xmax], dtick=1, gridcolor="#eee",
+                   scaleanchor="x", scaleratio=1),
+        plot_bgcolor="white",
+        legend=dict(orientation="h", y=-0.18, font=dict(size=9)),
+        hovermode="closest",
+        title=dict(text=f"{layer} · {joint or ''}", font=dict(size=12)),
+    )
+    return fig
+
+
+@app.callback(
+    Output("ma-camera", "value", allow_duplicate=True),
+    Input("ma-camera-map", "clickData"),
+    prevent_initial_call=True,
+)
+def ma_map_click(clickData):
+    if not clickData or "points" not in clickData:
+        raise PreventUpdate
+    cam = clickData["points"][0].get("customdata")
+    if not cam:
+        raise PreventUpdate
+    if isinstance(cam, (list, tuple)):
+        cam = cam[0]
+    return cam
+
+
+@app.callback(
+    Output("ma-graph", "figure"),
+    Output("ma-status", "children"),
+    Input("ma-camera", "value"),
+    Input("ma-joint", "value"),
+)
+def update_ma_graph(camera, joint):
+    if not camera or not joint:
+        fig = go.Figure()
+        fig.update_layout(title="カメラ / 関節を選択してください")
+        return fig, "未選択"
+
+    df = get_ma_frame()
+    if df.empty:
+        fig = go.Figure()
+        fig.update_layout(title="MA Noise データなし")
+        return fig, "missing data"
+
+    sub = df[(df["folder_name"] == camera) & (df["joint"] == joint)].sort_values(
+        "frame_id"
+    )
+    if sub.empty:
+        fig = go.Figure()
+        fig.update_layout(title=f"データなし: {camera} / {joint}")
+        return fig, f"no rows · {camera}"
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=sub["frame_id"], y=sub["eps_norm"],
+        mode="lines+markers", name="||ε||",
+        line=dict(color="#2980b9", width=2), marker=dict(size=5),
+    ))
+    fig.add_trace(go.Scatter(
+        x=sub["frame_id"], y=sub["eps_bar_norm"],
+        mode="lines", name="MA ||ε̄||",
+        line=dict(color="#27ae60", width=2, dash="dash"),
+    ))
+    fig.add_trace(go.Scatter(
+        x=sub["frame_id"], y=sub["threshold"],
+        mode="lines", name="threshold Kσ",
+        line=dict(color="#95a5a6", width=1.5, dash="dot"),
+    ))
+    bad = sub[~sub["keep"].astype(bool)]
+    if not bad.empty:
+        fig.add_trace(go.Scatter(
+            x=bad["frame_id"], y=bad["eps_norm"],
+            mode="markers", name="rejected",
+            marker=dict(color="#e74c3c", size=9, symbol="circle"),
+        ))
+
+    n_rej = int((~sub["keep"].astype(bool)).sum())
+    rej_rate = n_rej / len(sub)
+    fig.update_layout(
+        title=(
+            f"{joint} @ {camera}  |  reject {n_rej}/{len(sub)} "
+            f"({rej_rate:.1%})  mean||ε||={sub['eps_norm'].mean():.3f}"
+        ),
+        xaxis_title="Frame",
+        yaxis_title="||ε|| (walk-orthogonal)",
+        hovermode="x unified",
+        margin=dict(t=60, b=40),
+        plot_bgcolor="white",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    )
+    fig.update_xaxes(gridcolor="#eee")
+    fig.update_yaxes(gridcolor="#eee", rangemode="tozero")
+
+    status = (
+        f"{camera} · {joint} · frames {int(sub['frame_id'].min())}–"
+        f"{int(sub['frame_id'].max())} · reject {rej_rate:.1%}"
+    )
+    return fig, status
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -25,6 +25,7 @@ scripts/plot_angle_timeseries.py
 """
 
 import sys
+import os
 import re
 import argparse
 import math
@@ -46,10 +47,41 @@ from src.config import DATA, OUTPUT
 import config as root_config
 from tools.gt_adapter import load_gt_csv, find_gt_csv_for_camera
 
-# ── 出力フォルダ（v2 は別サブフォルダ）──────────────────────────────────
+# ── 出力フォルダ ──────────────────────────────────────────────────────────
+# DATASET_VERSION: 読み込み元（v1/v2）
+# OUTPUT_VERSION : 書き出し先（v1/v2/v3...）。未指定時は DATASET_VERSION に追従
 _ds = getattr(root_config, "DATASET_VERSION", "v1")
-OUT_DIR = Path(__file__).parent / "output" / ("v2" if _ds == "v2" else "v1")
+OUTPUT_VERSION = os.environ.get("OUTPUT_VERSION", _ds)
+OUT_DIR = Path(__file__).parent / "output" / OUTPUT_VERSION
 OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# 固定横軸（None ならデータ範囲に自動合わせ）
+FRAME_XLIM: tuple[int, int] | None = None
+
+
+def set_output_version(version: str) -> Path:
+    """出力先バージョンを切り替え、OUT_DIR を更新して返す。"""
+    global OUTPUT_VERSION, OUT_DIR
+    OUTPUT_VERSION = version
+    OUT_DIR = Path(__file__).parent / "output" / version
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    return OUT_DIR
+
+
+def set_frame_xlim(xlim: tuple[int, int] | None) -> None:
+    global FRAME_XLIM
+    FRAME_XLIM = xlim
+
+
+def reindex_to_xlim(angles_df: pd.DataFrame,
+                    xlim: tuple[int, int]) -> pd.DataFrame:
+    """frame を xlim[0]..xlim[1] で揃える（欠損は NaN）。"""
+    lo, hi = int(xlim[0]), int(xlim[1])
+    full = pd.RangeIndex(lo, hi + 1, name="frame")
+    df = angles_df.copy()
+    if df.index.name != "frame" and "frame" in df.columns:
+        df = df.set_index("frame")
+    return df.reindex(full)
 
 # ── 関節定義（3点角）──────────────────────────────────────────────────────
 JOINT_DEFS = {
@@ -223,25 +255,26 @@ def get_gt_point(df: pd.DataFrame, frame_id: int, name: str) -> np.ndarray | Non
 def compute_angles(mp_df: pd.DataFrame, gt_df: pd.DataFrame,
                    joint: str) -> pd.DataFrame:
     """
-    共通フレームについて GT・MP の 3点角を計算して DataFrame で返す。
+    GT と MP のフレーム和集合について 3点角を計算して DataFrame で返す。
+    片方しか無いフレームはもう一方を NaN にする（固定軸プロット用）。
     """
     jdef = JOINT_DEFS[joint]
-    common_frames = sorted(
-        set(mp_df["frame_id"].unique()) & set(gt_df["frame_id"].unique())
+    all_frames = sorted(
+        set(mp_df["frame_id"].unique()) | set(gt_df["frame_id"].unique())
     )
 
     records = []
-    for fid in common_frames:
-        # GT
+    for fid in all_frames:
         gp = [get_gt_point(gt_df, fid, n) for n in jdef["gt"]]
         gt_angle = three_point_angle(*gp) if all(p is not None for p in gp) else np.nan
 
-        # MP
         mp = [get_mp_point(mp_df, fid, n) for n in jdef["mp"]]
         mp_angle = three_point_angle(*mp) if all(p is not None for p in mp) else np.nan
 
         records.append({"frame": fid, "gt": gt_angle, "mp": mp_angle})
 
+    if not records:
+        return pd.DataFrame(columns=["gt", "mp"])
     return pd.DataFrame(records).set_index("frame").sort_index()
 
 
@@ -278,24 +311,37 @@ COLORS = {
 }
 
 def plot_pair(angles_df: pd.DataFrame, joint: str, camera: str,
-              h_bin: int, az_bin: int, az_deg: float, lag: int | None = None):
+              h_bin: int, az_bin: int, az_deg: float, lag: int | None = None,
+              frame_xlim: tuple[int, int] | None = None):
     """
     上段: GT / MP / 補正後 の重ね合わせ
     下段: MP誤差（|MP-GT|）と補正誤差（|corr-GT|）の比較
+
+    frame_xlim: (lo, hi) を指定すると横軸を固定し、CSV もその範囲で reindex する。
+                None のときはモジュール変数 FRAME_XLIM、それも None ならデータ範囲。
     """
+    xlim = frame_xlim if frame_xlim is not None else FRAME_XLIM
+    plot_df = angles_df.copy()
+    if "corr" not in plot_df.columns:
+        plot_df["corr"] = plot_df["mp"]
+    if xlim is not None:
+        plot_df = reindex_to_xlim(plot_df, xlim)
+
     lag_txt = f"  |  Cross-corr lag: {lag:+d} frames" if lag is not None else ""
+    xlim_txt = f"  |  X={xlim[0]}–{xlim[1]}" if xlim is not None else ""
     fig, axes = plt.subplots(2, 1, figsize=(12, 7), sharex=True,
                              gridspec_kw={"height_ratios": [3, 1.5]})
     fig.suptitle(
-        f"Joint Angle Time-series [{_ds}]  |  Joint: {joint}  |  Camera: {camera}\n"
-        f"Azimuth: {az_deg:.1f}°  |  Height-bin: {h_bin}  |  Azimuth-bin: {az_bin}{lag_txt}",
+        f"Joint Angle Time-series [{OUTPUT_VERSION}]  |  Joint: {joint}  |  Camera: {camera}\n"
+        f"Azimuth: {az_deg:.1f}°  |  Height-bin: {h_bin}  |  Azimuth-bin: {az_bin}"
+        f"{lag_txt}{xlim_txt}",
         fontsize=11, y=0.98,
     )
 
-    frames = angles_df.index.to_numpy()
-    gt   = angles_df["gt"].to_numpy()
-    mp   = angles_df["mp"].to_numpy()
-    corr = angles_df["corr"].to_numpy()
+    frames = plot_df.index.to_numpy()
+    gt   = plot_df["gt"].to_numpy()
+    mp   = plot_df["mp"].to_numpy()
+    corr = plot_df["corr"].to_numpy()
 
     # ─ 上段：角度重ね合わせ ─────────────────────────────────────────────
     ax0 = axes[0]
@@ -312,12 +358,17 @@ def plot_pair(angles_df: pd.DataFrame, joint: str, camera: str,
     ax0.grid(axis="y", which="minor", lw=0.2, alpha=0.3)
     ax0.legend(fontsize=9, loc="upper right", framealpha=0.9)
 
-    # MAE を凡例横に表示
-    mae_mp   = np.nanmean(np.abs(mp   - gt))
-    mae_corr = np.nanmean(np.abs(corr - gt))
+    # MAE は両方が有効なフレームのみ
+    both = np.isfinite(mp) & np.isfinite(gt)
+    mae_mp   = float(np.nanmean(np.abs(mp[both] - gt[both]))) if both.any() else float("nan")
+    both_c = np.isfinite(corr) & np.isfinite(gt)
+    mae_corr = float(np.nanmean(np.abs(corr[both_c] - gt[both_c]))) if both_c.any() else float("nan")
+    if np.isfinite(mae_mp) and mae_mp > 1e-9 and np.isfinite(mae_corr):
+        imp_txt = f"Improvement={100*(mae_mp-mae_corr)/mae_mp:.1f}%"
+    else:
+        imp_txt = "Improvement=n/a"
     ax0.text(0.01, 0.97,
-             f"MAE(raw)={mae_mp:.1f}°   MAE(corr)={mae_corr:.1f}°   "
-             f"Improvement={100*(mae_mp-mae_corr)/mae_mp:.1f}%",
+             f"MAE(raw)={mae_mp:.1f}°   MAE(corr)={mae_corr:.1f}°   {imp_txt}",
              transform=ax0.transAxes, va="top", ha="left",
              fontsize=9, color="#333333",
              bbox=dict(facecolor="white", alpha=0.8, edgecolor="none", pad=2))
@@ -337,6 +388,12 @@ def plot_pair(angles_df: pd.DataFrame, joint: str, camera: str,
     ax1.legend(fontsize=9, loc="upper right", framealpha=0.9)
     ax1.set_ylim(bottom=0)
 
+    if xlim is not None:
+        ax0.set_xlim(xlim[0], xlim[1])
+        ax1.set_xlim(xlim[0], xlim[1])
+        ax1.xaxis.set_major_locator(mticker.MultipleLocator(20))
+        ax1.xaxis.set_minor_locator(mticker.MultipleLocator(5))
+
     plt.tight_layout()
 
     # ── 保存 ─────────────────────────────────────────────────────────────
@@ -347,7 +404,7 @@ def plot_pair(angles_df: pd.DataFrame, joint: str, camera: str,
     fig.savefig(png_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
 
-    angles_df.reset_index().to_csv(csv_path, index=False)
+    plot_df.reset_index().to_csv(csv_path, index=False)
     print(f"  Saved: {png_path.name}")
     print(f"  Saved: {csv_path.name}")
     return png_path
@@ -364,7 +421,17 @@ def main():
                         default=["L_Elbow", "R_Elbow", "L_Knee", "R_Knee"],
                         help="プロットする関節名（複数可）")
     parser.add_argument("--n_az", type=int, default=8, help="方位角ビン数")
+    parser.add_argument("--output-version", default=None,
+                        help="出力サブフォルダ名 (例: v3)。未指定時は DATASET_VERSION")
+    parser.add_argument("--frame-xlim", nargs=2, type=int, default=None,
+                        metavar=("LO", "HI"),
+                        help="横軸固定範囲 (例: --frame-xlim 0 120)")
     args = parser.parse_args()
+
+    if args.output_version:
+        set_output_version(args.output_version)
+    if args.frame_xlim:
+        set_frame_xlim((args.frame_xlim[0], args.frame_xlim[1]))
 
     # カメラ情報
     cx, cy, cz = parse_camera_pos(args.camera)
@@ -372,11 +439,12 @@ def main():
     h_bin  = height_bin(cy)
     az_bin = azimuth_bin(az_deg, args.n_az)
 
-    print(f"\nDATASET_VERSION = {_ds}")
+    print(f"\nDATASET_VERSION = {_ds}  OUTPUT_VERSION = {OUTPUT_VERSION}")
     print(f"Camera : {args.camera}")
     print(f"  X={cx}, Y={cy}, Z={cz}")
     print(f"  Azimuth={az_deg:.1f}°  height_bin={h_bin}  azimuth_bin={az_bin}")
     print(f"Joints : {args.joints}")
+    print(f"FRAME_XLIM : {FRAME_XLIM}")
     print(f"MP_DIR : {root_config.MP_DIR}")
     print(f"INPUT  : {getattr(root_config, 'INPUT_DIR', None)}")
 
@@ -396,10 +464,12 @@ def main():
             continue
         print(f"\n--- {joint} ---")
         angles_df = compute_angles(mp_df, gt_df, joint)
-        if angles_df.empty:
-            print("  No common frames.")
+        if angles_df.empty or angles_df["mp"].notna().sum() < 1:
+            print("  No usable frames.")
             continue
-        print(f"  Common frames: {len(angles_df)}")
+        print(f"  Frames (union): {len(angles_df)}  "
+              f"mp_valid={angles_df['mp'].notna().sum()}  "
+              f"gt_valid={angles_df['gt'].notna().sum()}")
 
         lag, corr_peak = best_lag(
             angles_df["gt"].to_numpy(), angles_df["mp"].to_numpy()

@@ -1,63 +1,54 @@
 # 初見ユーザー向け クイックスタート
 
-このフォルダは、初めて使う方向けの最小手順です。
+最小手順です。詳細・フォルダ説明はルートの [`README.md`](../README.md) を参照してください。
+
+**現在の既定データは v2（動画）です。** `config.py` で `DATASET_VERSION = "v2"` になっていることを確認してください。
 
 ---
 
-## 3ステップで開始
+## v2（推奨）
 
-### 1. 依存パッケージのインストール
-
-プロジェクトルートで実行:
+### 1. 依存パッケージ
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. データ処理
+### 2. データ
 
-**パターンA: 画像から全自動（MediaPipe〜論文検証＋ダッシュボード）**
+`01_input_videos/CapturedFrames_{X}_{Y}_{Z}/` に次があること:
 
-`01_input_photos/` に次の形式で画像を置き、以下を実行:
+- `video.mp4`
+- `gt_joints.csv`
 
-```
-01_input_photos/
-  CapturedFrames_-1.0_0.5_-3.0/
-    frame_0001.jpg
-    frame_0002.jpg
-    ...
-  CapturedFrames_1.0_1.5_2.0/
-    ...
-```
+MediaPipe CSV は `02_mediapipe_v2/mediapipe_processed_csv/Y=*/`（未処理なら次のコマンドに `--with-mediapipe`）。
+
+### 3. パイプライン
 
 ```bash
-python run.py
+python run_v2_pipeline.py                  # MP 済み想定
+python run_v2_pipeline.py --with-mediapipe # MP から全部
+python run_v2_pipeline.py --no-dashboard   # GUI なし
 ```
 
-→ MediaPipe → MAE → 方向角分析 → 論文検証 → ダッシュボード起動まで自動実行。
+### 4. ダッシュボード
 
-**パターンB: 02 が既にある場合**
-
-```bash
-python run.py --no-mediapipe
-```
-
-→ ステップ1〜5 を実行し、最後にダッシュボードを起動。`--no-dashboard` でダッシュボード起動をスキップ。
-
-**パターンC: 方向角パイプラインのみ＋ダッシュボード（約1分、`run.py --dashboard`）**
-
-```bash
-python run.py --dashboard
-```
-
-### 3. 可視化ダッシュボード
-
-```bash
-python 07_dashboard/app.py
-```
-
-ブラウザで **http://127.0.0.1:8050/** を開く。
+| GUI | コマンド | URL |
+|-----|----------|-----|
+| 補正・時系列（推奨） | `python 09_calibration_framework/dashboard/app.py` | http://127.0.0.1:8051/ |
+| 旧統合 GUI | `python 07_dashboard/app.py` | http://127.0.0.1:8050/ |
 
 ---
 
-以上で完了です。
+## v1（旧・JPG）
+
+`config.py` で `DATASET_VERSION = "v1"` にしたうえで:
+
+```bash
+# 01_input_photos/CapturedFrames_*/ に JPG + synced GT
+python run.py
+python run.py --no-mediapipe   # 02 が既にある場合
+python 07_dashboard/app.py     # http://127.0.0.1:8050/
+```
+
+v1 は同期ずれ（約 −3 フレーム）があります。詳細: [`docs/SYNC_ISSUE_REPORT.md`](../docs/SYNC_ISSUE_REPORT.md)
