@@ -25,4 +25,4 @@ RIGHT_SHOULDER 21521     -0.009490          0.525499         0.278839           
 - median |cos φ|: 0.5539
 - fraction |cos φ| < 0.3: 0.271
 
-See docs/CAMERA_JOINT_ERROR_MC_ANALYSIS.md for interpretation and caveats.
+See docs/05_CAMERA_JOINT_ERROR_MC_ANALYSIS.md for interpretation and caveats.

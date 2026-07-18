@@ -2,7 +2,7 @@
 
 目的: 被験者の**直線歩行**を前提に、検出誤差のうち進行方向に直交する成分をノイズとみなし、**移動平均から大きく外れたフレームを排除**してノイズを小さくする。
 
-本ドキュメントは [`CAMERA_JOINT_ERROR_MC_ANALYSIS.md`](CAMERA_JOINT_ERROR_MC_ANALYSIS.md)（Error · MC / \(\cos\phi\) 解析）と記号・前提を揃える。  
+本ドキュメントは [`05_CAMERA_JOINT_ERROR_MC_ANALYSIS.md`](05_CAMERA_JOINT_ERROR_MC_ANALYSIS.md)（Error · MC / \(\cos\phi\) 解析）と記号・前提を揃える。  
 **歩行方向に基づく時間方向フィルタ**であり、カメラ視線方向解析（\(MC_n\)）とは役割が異なる（後述の対応表を参照）。
 
 > 状態: **実装済み**（案 B 座標）。  
@@ -149,7 +149,7 @@ m_0, m_final  →  D, D̂
 
 ### 4.1 記号対応表
 
-| 本ドキュメント | [`CAMERA_JOINT_ERROR_MC_ANALYSIS.md`](CAMERA_JOINT_ERROR_MC_ANALYSIS.md) | 備考 |
+| 本ドキュメント | [`05_CAMERA_JOINT_ERROR_MC_ANALYSIS.md`](05_CAMERA_JOINT_ERROR_MC_ANALYSIS.md) | 備考 |
 |----------------|------------------------------------------------------------------------|------|
 | フレーム \(n\) | `frame_id` | 関節インデックスではない |
 | \(c^{\mathrm{world}}\) | \(C\) | カメラ固定。フォルダ名の \((X,Y,Z)\) |
@@ -192,7 +192,7 @@ GT 自体の微小横ブレを真値に含めたくない場合に使う。
 
 ### 4.4 MediaPipe 座標（現状の制約）
 
-[`CAMERA_JOINT_ERROR_MC_ANALYSIS.md`](CAMERA_JOINT_ERROR_MC_ANALYSIS.md) と同じく、保存済み CSV は `pose_landmarks`（画像正規化）である。
+[`05_CAMERA_JOINT_ERROR_MC_ANALYSIS.md`](05_CAMERA_JOINT_ERROR_MC_ANALYSIS.md) と同じく、保存済み CSV は `pose_landmarks`（画像正規化）である。
 
 したがって \(E_n = m_n^{\mathrm{MP}} - m_n^{\mathrm{world}}\) をメートル空間で書くには、従来どおり:
 
@@ -242,8 +242,8 @@ GT 自体の微小横ブレを真値に含めたくない場合に使う。
 
 ## 7. 関連ドキュメント
 
-- カメラ–誤差解析: [`CAMERA_JOINT_ERROR_MC_ANALYSIS.md`](CAMERA_JOINT_ERROR_MC_ANALYSIS.md)
-- GT / 同期: [`UNITY_VIDEO_CAPTURE_PROMPT.md`](UNITY_VIDEO_CAPTURE_PROMPT.md), [`SYNC_ISSUE_REPORT.md`](SYNC_ISSUE_REPORT.md)
+- カメラ–誤差解析: [`05_CAMERA_JOINT_ERROR_MC_ANALYSIS.md`](05_CAMERA_JOINT_ERROR_MC_ANALYSIS.md)
+- GT / 同期: [`04_UNITY_VIDEO_CAPTURE_PROMPT.md`](04_UNITY_VIDEO_CAPTURE_PROMPT.md), [`03_SYNC_ISSUE_REPORT.md`](03_SYNC_ISSUE_REPORT.md)
 - MP 座標系: `06_theta_verification/MEDIAPIPE_COORDINATE_SYSTEM.md`
 - Error·MC 実装: `02_mediapipe_v2/run_error_mc_analysis.py`
 - ダッシュボード: `09_calibration_framework/dashboard/app.py`（Error · MC タブ）

@@ -2,7 +2,7 @@
 """
 移動平均によるノイズ除去（進行方向直交成分）
 
-docs/MOVING_AVERAGE_NOISE_REJECTION.md に基づく実装（案 B 座標揃え）。
+docs/06_MOVING_AVERAGE_NOISE_REJECTION.md に基づく実装（案 B 座標揃え）。
 
   D = m_final − m_0（GT 腰の歩行方向）
   E_n = m_n^MP − m_n^world（腰相対・Y反転・スケール後）
@@ -399,7 +399,7 @@ def main():
         by_joint.sort_values("reject_rate", ascending=False).to_string(index=False),
         "",
         f"Plots: {PLOT_DIR}",
-        "See docs/MOVING_AVERAGE_NOISE_REJECTION.md",
+        "See docs/06_MOVING_AVERAGE_NOISE_REJECTION.md",
     ]
     (OUT_DIR / "SUMMARY.md").write_text("\n".join(summary) + "\n", encoding="utf-8")
 

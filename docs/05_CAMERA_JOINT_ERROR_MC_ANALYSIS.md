@@ -80,7 +80,7 @@ MC_n = C - GT^{(n)}
 \]
 
 > **歩行方向 \(D\)** に基づくノイズ除去（移動平均）は別ドキュメント  
-> [`MOVING_AVERAGE_NOISE_REJECTION.md`](MOVING_AVERAGE_NOISE_REJECTION.md) を参照。\(D\) と \(MC_n\) は混同しないこと。
+> [`06_MOVING_AVERAGE_NOISE_REJECTION.md`](06_MOVING_AVERAGE_NOISE_REJECTION.md) を参照。\(D\) と \(MC_n\) は混同しないこと。
 
 - \(\cos\phi \approx \pm 1\): 誤差が視線に沿う（奥行き型）
 - \(\cos\phi \approx 0\): 誤差が視線に直交（画像面にほぼ平行な横ずれ型）
@@ -235,7 +235,7 @@ python 02_mediapipe_v2/run_error_mc_analysis.py
 | 現データ | GT と \(C\) はワールドで揃う。MP は画像正規化座標のため **そのままでは Error を定義不可** |
 | 既存コード | 角度 MAE は位置非対応。方向角は腰相対+Y反転。**Error·MC は案 B で実装済み** |
 | 次の一手 | 厳密化には `pose_world_landmarks` またはカメラ投影（案 A）。歩行直交ノイズ除去は下記 |
-| 関連（設計） | 進行方向直交成分の移動平均除去: [`MOVING_AVERAGE_NOISE_REJECTION.md`](MOVING_AVERAGE_NOISE_REJECTION.md) |
+| 関連（設計） | 進行方向直交成分の移動平均除去: [`06_MOVING_AVERAGE_NOISE_REJECTION.md`](06_MOVING_AVERAGE_NOISE_REJECTION.md) |
 
 ---
 
@@ -243,8 +243,8 @@ python 02_mediapipe_v2/run_error_mc_analysis.py
 
 - 本解析スクリプト: `02_mediapipe_v2/run_error_mc_analysis.py`
 - 出力: `02_mediapipe_v2/error_mc_analysis/results/`
-- 移動平均ノイズ除去（設計）: [`MOVING_AVERAGE_NOISE_REJECTION.md`](MOVING_AVERAGE_NOISE_REJECTION.md)
-- GT / 同期: `docs/UNITY_VIDEO_CAPTURE_PROMPT.md`, `docs/SYNC_ISSUE_REPORT.md`
+- 移動平均ノイズ除去（設計）: [`06_MOVING_AVERAGE_NOISE_REJECTION.md`](06_MOVING_AVERAGE_NOISE_REJECTION.md)
+- GT / 同期: `docs/04_UNITY_VIDEO_CAPTURE_PROMPT.md`, `docs/03_SYNC_ISSUE_REPORT.md`
 - MP 座標系: `06_theta_verification/MEDIAPIPE_COORDINATE_SYSTEM.md`
 - 腰相対 + Y 反転: `05_direction_detection/scripts/coordinate_transform.py`
 - 関節 3 点角（位置非対応）: `03_joint_angle_mae/coordinate_angle_comparison.py`

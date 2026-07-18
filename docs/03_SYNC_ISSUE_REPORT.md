@@ -157,7 +157,7 @@ gt_aligned = gt.assign(frame_id=gt["frame_id"] + LAG)  # LAG = 3
 | `09_calibration_framework/scripts/plot_angle_timeseries.py` | 位相ずれを発見した可視化スクリプト |
 | `09_calibration_framework/scripts/output/angle_timeseries_R_Elbow_*.png` | 位相ずれが視覚的に確認できるグラフ |
 | `paper/IEEJ_01/source/IEEJ_en/main.tex` §3.2 | 旧キャプチャ方式の記述 |
-| `docs/UNITY_VIDEO_CAPTURE_PROMPT.md` | Unity コード書き換えエージェントへのプロンプト |
+| `docs/04_UNITY_VIDEO_CAPTURE_PROMPT.md` | Unity コード書き換えエージェントへのプロンプト |
 
 ---
 
@@ -169,4 +169,4 @@ gt_aligned = gt.assign(frame_id=gt["frame_id"] + LAG)  # LAG = 3
       → v2 時系列でラグ **0±2 フレーム**（旧 −3）。比較図: `09_calibration_framework/scripts/output/v1` vs `v2`
 - [x] 再収集データで MAE・方向角・校正パイプラインを再実行（03〜07, 09）
 - [ ] IEEJ_02 論文の数値・図を v2 結果に更新する  
-      → 進捗全体: [`docs/PROGRESS.md`](PROGRESS.md)
+      → 進捗全体: [`docs/00_PROGRESS.md`](00_PROGRESS.md)

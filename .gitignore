@@ -63,4 +63,7 @@ Thumbs.db
 # 全観測の方向角詳細（再生成で得る。誤コミット防止）
 05_direction_detection/output/processed_data/detailed_results.csv
 
+# UV 擬似ワールド補正のフレーム別 CSV（~100MB/実行。再生成で得る）
+02_mediapipe_v2/uv_pseudo_world_correction/results*/uvpw_frame_joint.csv
+
 

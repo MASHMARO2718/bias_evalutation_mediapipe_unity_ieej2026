@@ -2,7 +2,7 @@
 """
 カメラ位置と関節位置誤差の関連分析（Error · MC）— 案 B（近似）
 
-docs/CAMERA_JOINT_ERROR_MC_ANALYSIS.md に基づき、既存の
+docs/05_CAMERA_JOINT_ERROR_MC_ANALYSIS.md に基づき、既存の
   02_mediapipe_v2/mediapipe_processed_csv  と
   01_input_videos/*/gt_joints.csv
 を用いて Error·MC / cosφ を計算する。
@@ -401,7 +401,7 @@ def main():
         f"- median |cos φ|: {df['abs_cos_phi'].median():.4f}",
         f"- fraction |cos φ| < 0.3: {(df['abs_cos_phi'] < 0.3).mean():.3f}",
         "",
-        "See docs/CAMERA_JOINT_ERROR_MC_ANALYSIS.md for interpretation and caveats.",
+        "See docs/05_CAMERA_JOINT_ERROR_MC_ANALYSIS.md for interpretation and caveats.",
     ]
     summary_path = OUT_DIR / "SUMMARY.md"
     summary_path.write_text("\n".join(summary_lines) + "\n", encoding="utf-8")

@@ -1,6 +1,6 @@
 # プロジェクト進捗メモ
 
-**最終更新**: 2026-07-17  
+**最終更新**: 2026-07-19  
 **目標**: IEEJ_02 論文の完成（同期修正済み v2 データでの再評価結果を反映）
 
 ---
@@ -33,8 +33,8 @@
 v1 処理結果の退避先: `_backup_v1_outputs_20260716_233457/`
 
 関連ドキュメント:
-- [`docs/SYNC_ISSUE_REPORT.md`](SYNC_ISSUE_REPORT.md) — ずれの原因分析
-- [`docs/UNITY_VIDEO_CAPTURE_PROMPT.md`](UNITY_VIDEO_CAPTURE_PROMPT.md) — Unity 書き換え用プロンプト
+- [`docs/03_SYNC_ISSUE_REPORT.md`](03_SYNC_ISSUE_REPORT.md) — ずれの原因分析
+- [`docs/04_UNITY_VIDEO_CAPTURE_PROMPT.md`](04_UNITY_VIDEO_CAPTURE_PROMPT.md) — Unity 書き換え用プロンプト
 
 ---
 
@@ -96,6 +96,28 @@ v1 処理結果の退避先: `_backup_v1_outputs_20260716_233457/`
 ### 関節角 MAE（v2, 全カメラ平均の目安）
 
 肘・膝 ~15°、腰 ~20°、肩 ~35°（詳細は `03_joint_angle_mae/joint_angle_error_statistics.csv`）
+
+### 2026-07-18〜19（UV 擬似ワールド補正 — 詳細は [`07_UV_PSEUDO_WORLD_CORRECTION.md`](07_UV_PSEUDO_WORLD_CORRECTION.md)）
+
+1. **GT フリー時系列補正の実装**（`02_mediapipe_v2/run_uv_pseudo_world_correction.py`）
+   UV 大域位置から擬似ワールドを構成 → 進行方向直交成分を移動平均+3σ で置換。
+   全 576 カメラで実行（484 処理 / 92 は遠方で MP 検出なし）。
+2. **前提「誤差は奥行きに乗る」を定量確認**: 補正ベクトルの 87% が視線方向。
+3. **自己マスキング発見 → MAD 化**: 移動標準偏差はスパイク自身で閾値が膨らみ
+   本物のグリッチと境界ノイズが分離不能（比率とも 1.14）。移動 MAD で分離
+   （グリッチ 16.6 vs 通常 1.9）。推奨構成 `--robust-sigma --k-sigma 5`。
+4. **腰軌跡 V 字誤差の原因特定とスケール較正**: MP z が体幹長を 54% 水増し
+   + 事前値の定義不一致 → 2D 体幹長+実効定数 0.582 m（`--torso-2d`）で
+   腰軌跡誤差 0.581 → **0.067 m**（真横 3 m）。
+5. **膝の奥行き誤差の構造分解**: ビン定数バイアス + ARIMA(2,0,2) の滑らか波
+   + 白色ノイズ ±0.1 m に完全分解。bin+ARIMA 減算で |e_X| **82〜90%減**、
+   膝角度 MAE 26〜43% 改善。鏡映（深度左右曖昧性）が bin バイアスの符号を
+   反転させる問題を発見（配備の前提条件として文書化）。
+6. **副産物**: 関節マッピング監査で肩の GT 対応誤り
+   （`LeftShoulder`=鎖骨 → 正しくは `LeftUpperArm`）を発見。
+   `05_direction_detection/scripts/data_loader.py:90` にも同じ誤りがあり、
+   **論文数値に波及するため修正は要判断**。
+7. docs/ を時系列番号付きにリネーム（本ファイル含む）、README・参照を一括更新。
 
 ---
 

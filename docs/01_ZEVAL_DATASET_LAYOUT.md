@@ -47,4 +47,4 @@
 2. 方向角サマリー・相関: `11_direction_ditection/output/` 配下の **CSV のみ**必要に応じてコピー
 3. 計算根幹: `coordinate_angle_comparison.py` → `03_joint_angle_mae/coordinate_angle_comparison.py`
 
-全文面の `detailed_results.csv` が必要な場合は、クローン後にパイプラインを実行するか、別途アーカイブから取得する（`docs/REPRODUCTION.md` 参照）。
+全文面の `detailed_results.csv` が必要な場合は、クローン後にパイプラインを実行するか、別途アーカイブから取得する（`docs/02_REPRODUCTION.md` 参照）。

@@ -57,7 +57,7 @@ v1（JPG・同期ずれあり）を使う場合は `DATASET_VERSION = "v1"` に�
 
 高さ層は共通で `Y=0.5 / 1.0 / 1.5 / 2.0`。フォルダ名は `CapturedFrames_{X}_{Y}_{Z}`（メートル）。
 
-詳細: [`docs/SYNC_ISSUE_REPORT.md`](docs/SYNC_ISSUE_REPORT.md) · 進捗: [`docs/PROGRESS.md`](docs/PROGRESS.md)
+詳細: [`docs/03_SYNC_ISSUE_REPORT.md`](docs/03_SYNC_ISSUE_REPORT.md) · 進捗: [`docs/00_PROGRESS.md`](docs/00_PROGRESS.md)
 
 ---
 
@@ -85,8 +85,10 @@ v1（JPG・同期ずれあり）を使う場合は `DATASET_VERSION = "v1"` に�
 │   ├── mediapipe_processed_csv/Y=*/
 │   ├── overlay_mp_landmarks.py      # CSV を video に骨格重ね（再検出なし）
 │   ├── overlay_videos/              # 重ね描き mp4 出力
-│   ├── run_ma_noise_rejection.py    # 移動平均ノイズ低減実験
-│   └── run_error_mc_analysis.py     # 関節誤差モンテカルロ解析
+│   ├── run_ma_noise_rejection.py    # 移動平均ノイズ低減実験（GT 基準）
+│   ├── run_error_mc_analysis.py     # 関節誤差モンテカルロ解析
+│   ├── run_uv_pseudo_world_correction.py  # UV 擬似ワールド補正（GT フリー）
+│   └── uv_pseudo_world_correction/  # 同・結果（results_std_k3 / results_mad_k5）
 │
 ├── 03_joint_angle_mae/       # 3点角 MAE（層別 CSV・統合表・ヒートマップ）
 ├── 04_max_angle_error/       # 最大角度誤差
@@ -123,6 +125,8 @@ v1（JPG・同期ずれあり）を使う場合は `DATASET_VERSION = "v1"` に�
 | `mediapipe_processed_csv/Y=*/CapturedFrames_*.csv` | `frame_id, landmark, x, y, z, visibility`（画像正規化座標） |
 | `overlay_mp_landmarks.py` | 既存 CSV を動画に骨格重ね。左上に `現在/総フレーム` |
 | `overlay_videos/Y=*/` | `*_mp_overlay.mp4` |
+| `run_uv_pseudo_world_correction.py` | UV 大域位置から腰軌跡を復元し、進行方向直交成分を MAD フィルタで補正（GT フリー）。詳細: [`docs/07_UV_PSEUDO_WORLD_CORRECTION.md`](docs/07_UV_PSEUDO_WORLD_CORRECTION.md) |
+| `uv_pseudo_world_correction/results_*/` | 同・結果（`results_mad_k5` が推奨構成） |
 
 ```bash
 # 1 カメラ
@@ -169,13 +173,14 @@ python scripts/batch_angle_timeseries.py --output-version v3 --frame-xlim 0 120
 
 | パス | 内容 |
 |------|------|
-| `docs/SYNC_ISSUE_REPORT.md` | v1 同期ずれの原因と対策 |
-| `docs/UNITY_VIDEO_CAPTURE_PROMPT.md` | Unity 動画キャプチャ仕様 |
-| `docs/REPRODUCTION.md` | 再現手順 |
-| `docs/ZEVAL_DATASET_LAYOUT.md` | 外部データセット対応 |
-| `docs/MOVING_AVERAGE_NOISE_REJECTION.md` | 移動平均ノイズ低減 |
-| `docs/CAMERA_JOINT_ERROR_MC_ANALYSIS.md` | 関節誤差 MC 解析 |
-| `docs/PROGRESS.md` | 進捗メモ |
+| `docs/03_SYNC_ISSUE_REPORT.md` | v1 同期ずれの原因と対策 |
+| `docs/04_UNITY_VIDEO_CAPTURE_PROMPT.md` | Unity 動画キャプチャ仕様 |
+| `docs/02_REPRODUCTION.md` | 再現手順 |
+| `docs/01_ZEVAL_DATASET_LAYOUT.md` | 外部データセット対応 |
+| `docs/06_MOVING_AVERAGE_NOISE_REJECTION.md` | 移動平均ノイズ低減（GT 基準） |
+| `docs/05_CAMERA_JOINT_ERROR_MC_ANALYSIS.md` | 関節誤差 MC 解析 |
+| `docs/07_UV_PSEUDO_WORLD_CORRECTION.md` | UV 擬似ワールド補正（GT フリー）と検証・関節マッピング監査 |
+| `docs/00_PROGRESS.md` | 進捗メモ |
 | `paper/IEEJ_01/` | バイアス評価論文（提出済み） |
 | `paper/IEEJ_02/` | 局所線形補正論文（執筆中） |
 | `tools/` | GT アダプタ等のユーティリティ |
@@ -195,6 +200,7 @@ python scripts/batch_angle_timeseries.py --output-version v3 --frame-xlim 0 120
 | `python 07_dashboard/app.py` | 旧 GUI → :8050 |
 | `python 09_calibration_framework/dashboard/app.py` | 補正 GUI → :8051 |
 | `python 02_mediapipe_v2/overlay_mp_landmarks.py` | MP 骨格オーバーレイ動画 |
+| `python 02_mediapipe_v2/run_uv_pseudo_world_correction.py --torso-2d --robust-sigma --k-sigma 5` | UV 擬似ワールド補正（推奨構成） |
 | `python verify_paper_data.py` | 論文数値の整合確認 |
 | `docker compose up --build` | Docker でダッシュボード（:8050） |
 
@@ -266,8 +272,8 @@ pdflatex main.tex && pdflatex main.tex
 | ドキュメント | 内容 |
 |--------------|------|
 | [`00_quickstart/`](00_quickstart/) | 最小手順（主に v1） |
-| [`docs/PROGRESS.md`](docs/PROGRESS.md) | 現状と作業ログ |
-| [`docs/REPRODUCTION.md`](docs/REPRODUCTION.md) | 再現性 |
+| [`docs/00_PROGRESS.md`](docs/00_PROGRESS.md) | 現状と作業ログ |
+| [`docs/02_REPRODUCTION.md`](docs/02_REPRODUCTION.md) | 再現性 |
 | [`09_calibration_framework/README.md`](09_calibration_framework/README.md) | 補正フレームワーク |
 | [`09_calibration_framework/docs/07_correction_models.md`](09_calibration_framework/docs/07_correction_models.md) | 補正モデル 2–6 の説明 |
 | [`08_dev/README.md`](08_dev/README.md) | 開発者メモ |

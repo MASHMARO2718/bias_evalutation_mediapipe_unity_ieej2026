@@ -28,4 +28,4 @@ RIGHT_SHOULDER 21502     0.271463       0.111489     0.278829          0.277694
     LEFT_ANKLE 21502     0.259092       0.287299     0.542276          0.537567
 
 Plots: C:\projects\MOTIONTRACK\bias_evaluation_,mediapipe_unity_ieej2026\02_mediapipe_v2\ma_noise_rejection\results\plots
-See docs/MOVING_AVERAGE_NOISE_REJECTION.md
+See docs/06_MOVING_AVERAGE_NOISE_REJECTION.md

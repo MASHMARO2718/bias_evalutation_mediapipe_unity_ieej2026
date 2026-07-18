@@ -51,4 +51,4 @@ python run.py --no-mediapipe   # 02 が既にある場合
 python 07_dashboard/app.py     # http://127.0.0.1:8050/
 ```
 
-v1 は同期ずれ（約 −3 フレーム）があります。詳細: [`docs/SYNC_ISSUE_REPORT.md`](../docs/SYNC_ISSUE_REPORT.md)
+v1 は同期ずれ（約 −3 フレーム）があります。詳細: [`docs/03_SYNC_ISSUE_REPORT.md`](../docs/03_SYNC_ISSUE_REPORT.md)
