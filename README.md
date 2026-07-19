@@ -12,6 +12,36 @@ Unity で取得した関節 Ground Truth（GT）と MediaPipe Pose 推定を比�
 | 補正ダッシュボード | http://localhost:8051/（`09_calibration_framework`） |
 | 旧ダッシュボード | http://localhost:8050/（`07_dashboard`） |
 
+## 主要結果ハイライト（2026-07-19 時点）
+
+| 成果 | 数値 | 詳細 |
+|------|------|------|
+| **GT フリー補正の別カメラ検証**（推論時 GT ゼロ・完全 out-of-sample） | 角度 MAE 膝 **42〜46%** / 肘 **71〜78%** 改善（例: L_ELBOW 40.9°→8.9°) | [`docs/08`](docs/08_GT_FREE_CHEATSHEET_MODEL.md) |
+| **アンカーフリー化**（フレーム原点に依存しない配備形） | アンカー破壊テストで z-bearing 索引が全関節最良で生存（膝 8.2〜11.2°） | [`docs/10`](docs/10_PHASE_EXPLICIT_MODEL_PROPOSAL.md) §7 |
+| 系統誤差は視方位でなく**歩行位相ロック**という発見 | カメラ 0.4 m 移動 = 誤差波形 ~8 フレームずれ | [`docs/08`](docs/08_GT_FREE_CHEATSHEET_MODEL.md) §4 |
+| UV からの腰軌跡復元（大域変位の GT フリー取得） | 平均誤差 **0.067 m**（真横 3 m） | [`docs/07`](docs/07_UV_PSEUDO_WORLD_CORRECTION.md) |
+| 膝奥行き誤差の構造分解（bin+ARIMA、in-sample 上限） | \|e_X\| **82〜90%** 減 | [`docs/07`](docs/07_UV_PSEUDO_WORLD_CORRECTION.md) §7 |
+| Model 4S 符号付き視点ビン補正（既存主結果） | \|Δθ\| **65.9 / 72.6%** 改善 | `09_calibration_framework/` |
+
+改訂版アブストラクト＋キーワード候補: [`docs/08`](docs/08_GT_FREE_CHEATSHEET_MODEL.md) §7 ·
+論文構成の検討材料: [`paper/IEEJ_02/resume/`](paper/IEEJ_02/resume/README.md)
+
+### ドキュメント索引（時系列順）
+
+| # | ドキュメント | 内容 |
+|---|---|---|
+| 00 | [`00_PROGRESS.md`](docs/00_PROGRESS.md) | 進捗メモ・作業ログ（常時更新） |
+| 01 | [`01_ZEVAL_DATASET_LAYOUT.md`](docs/01_ZEVAL_DATASET_LAYOUT.md) | 外部データセット対応 |
+| 02 | [`02_REPRODUCTION.md`](docs/02_REPRODUCTION.md) | 再現手順 |
+| 03 | [`03_SYNC_ISSUE_REPORT.md`](docs/03_SYNC_ISSUE_REPORT.md) | v1 同期ずれの原因と対策 |
+| 04 | [`04_UNITY_VIDEO_CAPTURE_PROMPT.md`](docs/04_UNITY_VIDEO_CAPTURE_PROMPT.md) | Unity 動画キャプチャ仕様 |
+| 05 | [`05_CAMERA_JOINT_ERROR_MC_ANALYSIS.md`](docs/05_CAMERA_JOINT_ERROR_MC_ANALYSIS.md) | 関節誤差 MC 解析 |
+| 06 | [`06_MOVING_AVERAGE_NOISE_REJECTION.md`](docs/06_MOVING_AVERAGE_NOISE_REJECTION.md) | 移動平均ノイズ低減（GT 基準） |
+| 07 | [`07_UV_PSEUDO_WORLD_CORRECTION.md`](docs/07_UV_PSEUDO_WORLD_CORRECTION.md) | UV 擬似ワールド補正・スケール較正・bin+ARIMA・関節マッピング監査 |
+| 08 | [`08_GT_FREE_CHEATSHEET_MODEL.md`](docs/08_GT_FREE_CHEATSHEET_MODEL.md) | **GT フリーモデル再構築と別カメラ検証（最新）** |
+| 09 | [`09_GAIT_PHASE_LOCKED_ERROR.md`](docs/09_GAIT_PHASE_LOCKED_ERROR.md) | 歩行位相ロック誤差の発見経緯と解説 |
+| 10 | [`10_PHASE_EXPLICIT_MODEL_PROPOSAL.md`](docs/10_PHASE_EXPLICIT_MODEL_PROPOSAL.md) | 位相明示型モデル: 設計→実装検証（アンカー破壊テストで z-bearing / 2 階建てが生存） |
+
 ---
 
 ## クイックスタート（v2）
@@ -127,6 +157,11 @@ v1（JPG・同期ずれあり）を使う場合は `DATASET_VERSION = "v1"` に�
 | `overlay_videos/Y=*/` | `*_mp_overlay.mp4` |
 | `run_uv_pseudo_world_correction.py` | UV 大域位置から腰軌跡を復元し、進行方向直交成分を MAD フィルタで補正（GT フリー）。詳細: [`docs/07_UV_PSEUDO_WORLD_CORRECTION.md`](docs/07_UV_PSEUDO_WORLD_CORRECTION.md) |
 | `uv_pseudo_world_correction/results_*/` | 同・結果（`results_mad_k5` が推奨構成） |
+| `run_gt_free_model.py` | 推論時 GT ゼロの補正パイプライン（カンニングペーパー方式）。別カメラ検証で角度 MAE 膝 42〜46% / 肘 71〜78% 改善。詳細: [`docs/08_GT_FREE_CHEATSHEET_MODEL.md`](docs/08_GT_FREE_CHEATSHEET_MODEL.md) |
+| `gt_free_model/` | 同・カンニングペーパー JSON と検証結果 |
+| `run_phase_explicit_model.py` | 位相明示型・アンカーフリー化の 4 方式比較（z-travel / z-bearing / phase / two-level + アンカー破壊テスト）。詳細: [`docs/10_PHASE_EXPLICIT_MODEL_PROPOSAL.md`](docs/10_PHASE_EXPLICIT_MODEL_PROPOSAL.md) §7 |
+| `phase_explicit_model/` | 同・比較結果とプロット |
+| `mediapipe_processed_csv_additional/` | 追加検証動画（`aditional__test_data`）の MP 処理結果 |
 
 ```bash
 # 1 カメラ
@@ -180,6 +215,9 @@ python scripts/batch_angle_timeseries.py --output-version v3 --frame-xlim 0 120
 | `docs/06_MOVING_AVERAGE_NOISE_REJECTION.md` | 移動平均ノイズ低減（GT 基準） |
 | `docs/05_CAMERA_JOINT_ERROR_MC_ANALYSIS.md` | 関節誤差 MC 解析 |
 | `docs/07_UV_PSEUDO_WORLD_CORRECTION.md` | UV 擬似ワールド補正（GT フリー）と検証・関節マッピング監査 |
+| `docs/08_GT_FREE_CHEATSHEET_MODEL.md` | GT フリーモデル再構築（カンニングペーパー方式）と別カメラ検証 |
+| `docs/09_GAIT_PHASE_LOCKED_ERROR.md` | 歩行位相ロック誤差の発見経緯と解説 |
+| `docs/10_PHASE_EXPLICIT_MODEL_PROPOSAL.md` | 位相明示型モデル: 設計提案と実装検証（アンカーフリー化） |
 | `docs/00_PROGRESS.md` | 進捗メモ |
 | `paper/IEEJ_01/` | バイアス評価論文（提出済み） |
 | `paper/IEEJ_02/` | 局所線形補正論文（執筆中） |
