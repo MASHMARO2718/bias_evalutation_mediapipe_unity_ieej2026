@@ -6,6 +6,8 @@
 ```
 data_storage/
 ├── README.md                          ← このファイル（git 追跡）
+├── raw/                               ← 入力系の大容量アーカイブ（git 外）
+│   └── v2/synced_joint_positions.csv  # 全カメラ結合マスター GT（参照用）
 ├── intermediate/                      ← パイプライン中間 CSV / 動画
 │   ├── v1/
 │   │   └── mediapipe_processed_csv/   # 旧 JPG 系 MediaPipe 出力
@@ -40,4 +42,5 @@ data_storage/
 | `05_direction_detection/output/` | `experiments/direction_detection/output/` |
 | `09_calibration_framework/outputs/{bias_tables,results,figures}/` | `experiments/calibration/outputs/` |
 
-入力データ（`01_input_photos/`, `01_input_videos/`）は未移動。必要なら同様に `data_storage/raw/` へ移す。
+v2 本線の入力は `01_input_videos/*/gt_joints.csv` + `video.mp4`。  
+`raw/v2/synced_joint_positions.csv` は結合マスターの参照用アーカイブ（コードは参照しない）。
