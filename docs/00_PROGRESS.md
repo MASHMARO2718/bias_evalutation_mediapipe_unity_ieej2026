@@ -138,6 +138,31 @@ v1 処理結果の退避先: `_backup_v1_outputs_20260716_233457/`
     悪化するまで崩壊する一方、**方位ベース絶対 z 索引（z-bearing）が全関節
     最良で生存**（膝 8.2〜11.2° / 肘 5.9〜7.2°）。テンプレート照合による
     左右スワップ判定も動作確認。配備推奨は z-bearing 主・2 階建て将来拡張。
+11. **構成刷新版の論文下書き（案B）を作成**: `paper/IEEJ_02/IEEJ_ja_gtfree/`
+    （main.tex 全文・PAPER_MEMO.md・図 5 枚）。docs/07〜10 の成果を
+    「はじめに→関連研究→提案手法→実験設定→結果→考察→むすび」の
+    7 節構成に本文化。既存稿 `IEEJ_ja_calibration/` は無変更。
+12. **world landmarks 単独補正の実証**（詳細は
+    [`11_WORLD_LANDMARK_MODEL.md`](11_WORLD_LANDMARK_MODEL.md)）:
+    UV 擬似ワールドを使わず pose_world_landmarks だけで補正パイプラインを
+    構成・検証。world raw は UV raw より大幅に高品質（L_ELBOW 40.9→14.3° 等）で、
+    ゆっくり成分が GHUM フィットで消えるため**位相のみの索引が成立**。
+    W-phase が全関節で UV 系最良を更新（膝 5.8〜8.7° / 肘 3.1〜7.7°）し、
+    推論時入力は「MP world 出力+較正表」のみ（カメラ情報・画像座標・
+    フレーム原点すべて不要）。論文下書き §3 は world 中心への再構成が必要。
+13. **論文下書きを第 2 稿に全面改稿**（`paper/IEEJ_02/IEEJ_ja_gtfree/`）:
+    主軸を「world landmarks + 位相索引」に変更し、UV 系の結果は
+    「発見の過程（位相ロック同定・アンカー問題）」として §5.1–5.2 に整理。
+    全表・図に座標系（画像系/world）を明記して数値の混同を排除。
+    アブストラクト（和英）・キーワード・PAPER_MEMO（200字要旨・50語）も
+    最終結果（膝 5.8〜8.7° / 肘 3.1〜7.7°、推論時入力は推定器出力+較正表のみ）
+    ベースに更新。フォーマット規定（`IEEJ_format_instruction`）に準拠させ、
+    実験目的の節・全体フロー図（段抜き）を追加、専門語を平易化。
+14. **CANDAR 投稿版（英文）を作成**: `paper/IEEJ_02/CANDAR_gtfree/`
+    （IEEEtran conference・US-letter 2 段組 + IEEEtran.bst + refs.bib 22 件）。
+    内容は和文版と同一。CANDAR 規定（is-candar.org/paper_format）に合わせ
+    **ブラインド査読対応**（著者情報を匿名化、自己引用を三人称に修正）、
+    図を 6→4 点に削減し本文も圧縮。ページ数（Regular 5〜7）は要確認。
 
 ---
 

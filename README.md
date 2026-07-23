@@ -18,6 +18,7 @@ Unity で取得した関節 Ground Truth（GT）と MediaPipe Pose 推定を比�
 |------|------|------|
 | **GT フリー補正の別カメラ検証**（推論時 GT ゼロ・完全 out-of-sample） | 角度 MAE 膝 **42〜46%** / 肘 **71〜78%** 改善（例: L_ELBOW 40.9°→8.9°) | [`docs/08`](docs/08_GT_FREE_CHEATSHEET_MODEL.md) |
 | **アンカーフリー化**（フレーム原点に依存しない配備形） | アンカー破壊テストで z-bearing 索引が全関節最良で生存（膝 8.2〜11.2°） | [`docs/10`](docs/10_PHASE_EXPLICIT_MODEL_PROPOSAL.md) §7 |
+| **world landmarks 単独補正**（UV 構成もカメラ情報も不要） | W-phase で膝 5.8〜8.7° / 肘 3.1〜7.7°（UV 系最良を更新）。推論時入力は MP 出力+較正表のみ | [`docs/11`](docs/11_WORLD_LANDMARK_MODEL.md) |
 | 系統誤差は視方位でなく**歩行位相ロック**という発見 | カメラ 0.4 m 移動 = 誤差波形 ~8 フレームずれ | [`docs/08`](docs/08_GT_FREE_CHEATSHEET_MODEL.md) §4 |
 | UV からの腰軌跡復元（大域変位の GT フリー取得） | 平均誤差 **0.067 m**（真横 3 m） | [`docs/07`](docs/07_UV_PSEUDO_WORLD_CORRECTION.md) |
 | 膝奥行き誤差の構造分解（bin+ARIMA、in-sample 上限） | \|e_X\| **82〜90%** 減 | [`docs/07`](docs/07_UV_PSEUDO_WORLD_CORRECTION.md) §7 |
@@ -41,6 +42,7 @@ Unity で取得した関節 Ground Truth（GT）と MediaPipe Pose 推定を比�
 | 08 | [`08_GT_FREE_CHEATSHEET_MODEL.md`](docs/08_GT_FREE_CHEATSHEET_MODEL.md) | **GT フリーモデル再構築と別カメラ検証（最新）** |
 | 09 | [`09_GAIT_PHASE_LOCKED_ERROR.md`](docs/09_GAIT_PHASE_LOCKED_ERROR.md) | 歩行位相ロック誤差の発見経緯と解説 |
 | 10 | [`10_PHASE_EXPLICIT_MODEL_PROPOSAL.md`](docs/10_PHASE_EXPLICIT_MODEL_PROPOSAL.md) | 位相明示型モデル: 設計→実装検証（アンカー破壊テストで z-bearing / 2 階建てが生存） |
+| 11 | [`11_WORLD_LANDMARK_MODEL.md`](docs/11_WORLD_LANDMARK_MODEL.md) | **world landmarks 単独補正（最新）**: W-phase が UV 系を上回り、カメラ情報も不要に |
 
 ---
 
@@ -161,6 +163,9 @@ v1（JPG・同期ずれあり）を使う場合は `DATASET_VERSION = "v1"` に�
 | `gt_free_model/` | 同・カンニングペーパー JSON と検証結果 |
 | `run_phase_explicit_model.py` | 位相明示型・アンカーフリー化の 4 方式比較（z-travel / z-bearing / phase / two-level + アンカー破壊テスト）。詳細: [`docs/10_PHASE_EXPLICIT_MODEL_PROPOSAL.md`](docs/10_PHASE_EXPLICIT_MODEL_PROPOSAL.md) §7 |
 | `phase_explicit_model/` | 同・比較結果とプロット |
+| `extract_world_landmarks.py` / `mediapipe_world_csv/` | pose_world_landmarks の抽出（world 実験用、2 動画分） |
+| `run_world_landmark_model.py` | world landmarks 単独補正の 4 索引比較。詳細: [`docs/11_WORLD_LANDMARK_MODEL.md`](docs/11_WORLD_LANDMARK_MODEL.md) |
+| `world_landmark_model/` | 同・結果とプロット |
 | `mediapipe_processed_csv_additional/` | 追加検証動画（`aditional__test_data`）の MP 処理結果 |
 
 ```bash

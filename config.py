@@ -16,6 +16,10 @@ DATASET_VERSION = "v2"
 # ─── プロジェクトルート ───────────────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).parent
 
+# 中間生成物の実体置き場（構成: data_storage/README.md）。
+# 旧パスにはジャンクションがあり、下記の従来パス指定のまま動作する。
+DATA_STORAGE = PROJECT_ROOT / "data_storage"
+
 # ─── v1 パス（旧データ・変更禁止） ────────────────────────────────────────
 _V1_INPUT_DIR = PROJECT_ROOT / "01_input_photos"          # JPG + synced_joint_positions_*.csv
 _V1_MP_DIR    = PROJECT_ROOT / "02_mediapipe_processed" / "mediapipe_processed_csv"
