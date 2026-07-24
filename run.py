@@ -83,7 +83,7 @@ def run_step(step_num: str) -> bool:
         return True
 
     if num == "5":
-        return run_cmd([sys.executable, "verify_paper_data.py"], ROOT)
+        return run_cmd([sys.executable, "scripts/verify_paper_data.py"], ROOT)
 
     if subdirs[0] is None:
         cwd = ROOT / folder

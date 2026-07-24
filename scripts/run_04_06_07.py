@@ -4,7 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent  # scripts/ の一つ上がプロジェクト根
 Y_LAYERS = ["Y=0.5", "Y=1.0", "Y=1.5", "Y=2.0"]
 
 

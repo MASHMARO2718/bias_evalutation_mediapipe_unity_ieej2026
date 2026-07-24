@@ -6,7 +6,7 @@
 """
 from pathlib import Path
 
-ROOT = Path(__file__).parent
+ROOT = Path(__file__).resolve().parent.parent  # scripts/ の一つ上がプロジェクト根
 
 # 削除対象ディレクトリ（パイプライン出力）
 CLEAN_DIRS = [

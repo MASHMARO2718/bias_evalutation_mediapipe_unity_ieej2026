@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-BASE = Path(__file__).parent
+BASE = Path(__file__).resolve().parent.parent  # scripts/ の一つ上がプロジェクト根
 MAE_DIR = BASE / "3_joint_angle_mae"
 DIR05 = BASE / "5_direction"
 

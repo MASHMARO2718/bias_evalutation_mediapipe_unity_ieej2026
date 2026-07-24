@@ -6,7 +6,7 @@
 
 ```bash
 pip install -r requirements.txt
-python verify_paper_data.py
+python scripts/verify_paper_data.py
 ```
 
 - **表1（関節角 MAE）**: `3_joint_angle_mae/Y=0.5/`〜`Y=2.0/` 各フォルダの `coordinate_angle_mae.csv` を結合した統計と、`paper/source/IEEJ_ja/main.tex` の表を照合します。

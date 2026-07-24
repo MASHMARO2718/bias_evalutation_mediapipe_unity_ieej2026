@@ -119,11 +119,15 @@ v1（JPG・同期ずれあり）を使う場合は `DATASET_VERSION = "v1"` に�
 ├── requirements.txt
 ├── run_world_phase_correction.py  # ★ 補正モデル本線（論文の最終結果）
 ├── run_v2_pipeline.py        # ★ 576 カメラ調査ライン（03〜07, 09）
-├── run.py                    # v1 向けエントリ（01→02→03〜05→07）
-├── run_04_06_07.py           # 04/06/07 部分実行
-├── verify_paper_data.py      # 論文用数値の整合チェック
-├── clean_pipeline_outputs.py
+├── run.py                    # v1 向けエントリ
 ├── docker-compose.yml
+├── synced_joint_positions.csv # v1 マスター GT（config.GT_CSV）
+│
+├── scripts/                  # 補助スクリプト（検証・掃除・部分実行）
+│   ├── verify_paper_data.py      # 論文用数値の整合チェック
+│   ├── clean_pipeline_outputs.py
+│   ├── run_04_06_07.py           # 04/06/07 部分実行
+│   └── run_full_pipeline.py      # run.py の後方互換ラッパ
 │
 ├── 0_start/            # 初見向けメモ（主に v1 手順）
 │
@@ -265,7 +269,7 @@ python scripts/batch_angle_timeseries.py --output-version v3 --frame-xlim 0 120
 | `python 7_correction/dashboard/app.py` | 補正 GUI → :8051 |
 | `python 2_pose/overlay_mp_landmarks.py` | MP 骨格オーバーレイ動画 |
 | `python 2_pose/run_uv_pseudo_world_correction.py --torso-2d --robust-sigma --k-sigma 5` | UV 擬似ワールド補正（推奨構成） |
-| `python verify_paper_data.py` | 論文数値の整合確認 |
+| `python scripts/verify_paper_data.py` | 論文数値の整合確認 |
 | `docker compose up --build` | Docker でダッシュボード（:8050） |
 
 `run_v2_pipeline.py` のステップ番号の目安:
@@ -343,7 +347,7 @@ pdflatex main.tex && pdflatex main.tex
 注意点:
 
 - **`3_joint_angle_mae`**: `Y=*/coordinate_angle_mae.csv` が無いと
-  `verify_paper_data.py` のステップ 1・表 1 検証はスキップまたは失敗します。
+  `scripts/verify_paper_data.py` のステップ 1・表 1 検証はスキップまたは失敗します。
 - **中間生成物の実体**は `data_storage/` にあり、旧パスには Windows
   ジャンクションが張られています。構成は [`data_storage/README.md`](data_storage/README.md)。
 
