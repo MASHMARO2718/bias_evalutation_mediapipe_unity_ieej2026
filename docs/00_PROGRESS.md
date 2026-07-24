@@ -172,7 +172,12 @@ v1 処理結果の退避先: `_backup_v1_outputs_20260716_233457/`
 # データセット切替
 # config.py → DATASET_VERSION = "v1" | "v2"
 
-# v2 パイプライン全体（MP 済みなら）
+# 補正モデル本線（論文の最終結果 W-phase・動画 2 本）
+python run_world_phase_correction.py --check   # 入力確認
+python run_world_phase_correction.py           # 最終形を再現
+python run_world_phase_correction.py --history # 過程の実験（docs/07, 08, 10）
+
+# 576 カメラ調査ライン全体（MP 済みなら）
 python run_v2_pipeline.py --no-dashboard
 
 # 時系列グラフ（現在の DATASET_VERSION に応じて output/v1 or v2）

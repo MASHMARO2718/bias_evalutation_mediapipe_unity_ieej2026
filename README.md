@@ -4,11 +4,29 @@ Unity で取得した関節 Ground Truth（GT）と MediaPipe Pose 推定を比�
 
 **ソースコード:** [MASHMARO2718/bias_evalutation_mediapipe_unity_ieej2026](https://github.com/MASHMARO2718/bias_evalutation_mediapipe_unity_ieej2026)
 
+## どれを実行すればいいか
+
+このリポジトリには**目的の違う 2 本のライン**があります。まずどちらかを選んでください。
+
+| やりたいこと | 実行するもの | 規模 | 解説 |
+|---|---|---|---|
+| **論文（IEEJ_02 / CANDAR）の結果を再現したい** | `python run_world_phase_correction.py` | 動画 2 本（較正 1 + 検証 1） | [`docs/11`](docs/11_WORLD_LANDMARK_MODEL.md) |
+| **576 カメラのバイアス調査をやり直したい** | `python run_v2_pipeline.py` | 全 576 カメラ | 下記「解析パイプライン」 |
+| v1（旧 JPG・同期ずれあり）を触りたい | `python run.py` | 旧データ | [`docs/03`](docs/03_SYNC_ISSUE_REPORT.md) |
+
+**補正モデルの最終形**は world landmarks + 歩行位相索引（W-phase）です。
+推論時の入力は「MediaPipe の world 出力 + 較正表」のみで、カメラ情報も画像座標も要りません。
+
+```bash
+python run_world_phase_correction.py --check   # 入力が揃っているか確認
+python run_world_phase_correction.py           # 最終形を再現
+python run_world_phase_correction.py --history # 過程の実験（docs/07, 08, 10）
+```
+
 | 項目 | 現在の既定 |
 |------|------------|
 | データセット | **v2**（動画 + フレーム同期 GT） |
 | 切替 | ルート [`config.py`](config.py) の `DATASET_VERSION` |
-| 推奨パイプライン | `python run_v2_pipeline.py` |
 | 補正ダッシュボード | http://localhost:8051/（`09_calibration_framework`） |
 | 旧ダッシュボード | http://localhost:8050/（`07_dashboard`） |
 
@@ -99,7 +117,8 @@ v1（JPG・同期ずれあり）を使う場合は `DATASET_VERSION = "v1"` に�
 .
 ├── config.py                 # DATASET_VERSION / 入出力パス
 ├── requirements.txt
-├── run_v2_pipeline.py        # ★ v2 推奨エントリ（03〜07, 09）
+├── run_world_phase_correction.py  # ★ 補正モデル本線（論文の最終結果）
+├── run_v2_pipeline.py        # ★ 576 カメラ調査ライン（03〜07, 09）
 ├── run.py                    # v1 向けエントリ（01→02→03〜05→07）
 ├── run_04_06_07.py           # 04/06/07 部分実行
 ├── verify_paper_data.py      # 論文用数値の整合チェック
@@ -127,7 +146,6 @@ v1（JPG・同期ずれあり）を使う場合は `DATASET_VERSION = "v1"` に�
 ├── 05_direction_detection/   # 方向角・相関（論文 processed 系の主出力）
 ├── 06_theta_verification/    # θ・座標系検証
 ├── 07_dashboard/             # Dash 可視化（port 8050）
-├── 08_dev/                   # 開発メモ
 ├── 09_calibration_framework/ # ★ パラメトリック補正（研究本体 + GUI 8051）
 │
 ├── docs/                     # プロジェクト横断ドキュメント
@@ -235,7 +253,10 @@ python scripts/batch_angle_timeseries.py --output-version v3 --frame-xlim 0 120
 
 | コマンド | 用途 |
 |----------|------|
-| `python run_v2_pipeline.py` | **v2 本流**（MP 済み想定で 03〜09） |
+| `python run_world_phase_correction.py` | **補正モデル本線**（論文の最終結果 W-phase） |
+| `python run_world_phase_correction.py --check` | 補正モデルの入力が揃っているか確認 |
+| `python run_world_phase_correction.py --history` | 過程の実験を再現（docs/07, 08, 10） |
+| `python run_v2_pipeline.py` | **576 カメラ調査**（MP 済み想定で 03〜09） |
 | `python run_v2_pipeline.py --with-mediapipe` | v2 を MediaPipe から |
 | `python run_v2_pipeline.py --step N` | 特定ステップのみ |
 | `python run.py` | **v1** 全パイプライン |
@@ -310,6 +331,24 @@ pdflatex main.tex && pdflatex main.tex
 
 ---
 
+## 開発者向けメモ
+
+通常の利用では不要なもの:
+
+| 対象 | 用途 |
+|------|------|
+| `06_theta_verification/test_*.py`, `run_all.py` | 肘誤差・座標系の検証テスト |
+| `paper/create_camera_layout.py`, `paper/source/prepare_ieej_overleaf.py` | 論文用図・IEEJ 同梱物の同期 |
+
+注意点:
+
+- **`03_joint_angle_mae`**: `Y=*/coordinate_angle_mae.csv` が無いと
+  `verify_paper_data.py` のステップ 1・表 1 検証はスキップまたは失敗します。
+- **中間生成物の実体**は `data_storage/` にあり、旧パスには Windows
+  ジャンクションが張られています。構成は [`data_storage/README.md`](data_storage/README.md)。
+
+---
+
 ## 関連ドキュメント（入口）
 
 | ドキュメント | 内容 |
@@ -319,4 +358,4 @@ pdflatex main.tex && pdflatex main.tex
 | [`docs/02_REPRODUCTION.md`](docs/02_REPRODUCTION.md) | 再現性 |
 | [`09_calibration_framework/README.md`](09_calibration_framework/README.md) | 補正フレームワーク |
 | [`09_calibration_framework/docs/07_correction_models.md`](09_calibration_framework/docs/07_correction_models.md) | 補正モデル 2–6 の説明 |
-| [`08_dev/README.md`](08_dev/README.md) | 開発者メモ |
+| [`data_storage/README.md`](data_storage/README.md) | 中間生成物の置き場とフォルダ対応 |

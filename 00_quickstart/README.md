@@ -6,7 +6,21 @@
 
 ---
 
-## v2（推奨）
+## まずどちらのラインか選ぶ
+
+| やりたいこと | 実行するもの |
+|---|---|
+| **論文の結果を再現**（動画 2 本・補正モデル本線） | `python run_world_phase_correction.py` |
+| **576 カメラのバイアス調査**（下記 v2 手順） | `python run_v2_pipeline.py` |
+| v1（旧 JPG） | `python run.py` |
+
+補正モデル本線の最終形は world landmarks + 歩行位相索引です。
+入力が揃っているかは `python run_world_phase_correction.py --check` で確認できます。
+詳細: [`docs/11_WORLD_LANDMARK_MODEL.md`](../docs/11_WORLD_LANDMARK_MODEL.md)
+
+---
+
+## v2（576 カメラ調査ライン）
 
 ### 1. 依存パッケージ
 
