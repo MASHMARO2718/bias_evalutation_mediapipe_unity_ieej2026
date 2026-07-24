@@ -55,6 +55,9 @@ build/
 .claude/
 .serena/
 
+# 論文原稿（非公開・ローカルのみ。5_direction/paper/ は対象外）
+/paper/
+
 # OS
 .DS_Store
 Thumbs.db

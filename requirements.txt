@@ -1,9 +1,13 @@
 # MotionTrack パイプライン共通
 pandas>=1.0
 numpy>=1.0
+scipy>=1.7
 tqdm>=4.0
 seaborn>=0.11
 matplotlib>=3.0
+
+# 一部の解析スクリプト（ARIMA 分解など）のみ
+statsmodels>=0.13
 
 # 画像→MediaPipe CSV（ステップ0）
 opencv-python>=4.0
