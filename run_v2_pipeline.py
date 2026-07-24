@@ -4,18 +4,18 @@ v2 データセット向けパイプライン実行スクリプト
 
 前提:
   - config.py の DATASET_VERSION = "v2"
-  - 01_input_videos/ に video.mp4 + gt_joints.csv
-  - 02_mediapipe_v2/ に MediaPipe CSV（未完了なら --step 0 で処理）
+  - 10_input_videos/ に video.mp4 + gt_joints.csv
+  - 20_pose_correction/ に MediaPipe CSV（未完了なら --step 0 で処理）
 
 流れ（v1 と同様に 03〜07 も含む）:
-  0. MediaPipe 動画処理          → 02_mediapipe_v2/
-  1. 3点角 MAE（層別）           → 03_joint_angle_mae/joint_angle_mae_csv/Y=*/
+  0. MediaPipe 動画処理          → 20_pose_correction/
+  1. 3点角 MAE（層別）           → 30_joint_angle_mae/joint_angle_mae_csv/Y=*/
   2. MAE 統計テーブル統合
-  3. 最大角度誤差（04）          → 04_max_angle_error/calculation/Y=*/
-  4. 方向角・相関（05）          → 05_direction_detection/output/
-  5. θ検証（06）                 → 06_theta_verification/
+  3. 最大角度誤差（04）          → 31_max_angle_error/calculation/Y=*/
+  4. 方向角・相関（05）          → 32_direction_detection/output/
+  5. θ検証（06）                 → 33_theta_verification/
   6. ダッシュボード（07）        → http://127.0.0.1:8050/
-  7. キャリブレーション（09）    → 09_calibration_framework/outputs/
+  7. キャリブレーション（09）    → 40_calibration_framework/outputs/
 
 使い方:
   python run_v2_pipeline.py                  # MediaPipe 完了済み前提で 1→7
@@ -55,10 +55,10 @@ def backup_v1_outputs() -> None:
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_root = ROOT / f"_backup_v1_outputs_{stamp}"
     targets = [
-        ROOT / "03_joint_angle_mae" / "joint_angle_mae_csv",
-        ROOT / "03_joint_angle_mae" / "coordinate_angle_mae_combined.csv",
-        ROOT / "05_direction_detection" / "output",
-        ROOT / "09_calibration_framework" / "outputs",
+        ROOT / "30_joint_angle_mae" / "joint_angle_mae_csv",
+        ROOT / "30_joint_angle_mae" / "coordinate_angle_mae_combined.csv",
+        ROOT / "32_direction_detection" / "output",
+        ROOT / "40_calibration_framework" / "outputs",
     ]
     backup_root.mkdir(parents=True, exist_ok=True)
     for t in targets:
@@ -76,16 +76,16 @@ def backup_v1_outputs() -> None:
 
 
 def step_mediapipe() -> bool:
-    cwd = ROOT / "02_mediapipe_v2"
+    cwd = ROOT / "20_pose_correction"
     return run_cmd([sys.executable, "mediapipe_video_processor.py"], cwd)
 
 
 def step_angle_mae() -> bool:
     """層別に coordinate_angle_comparison.py を実行"""
-    mp_base = ROOT / "02_mediapipe_v2" / "mediapipe_processed_csv"
-    gt_glob = str(ROOT / "01_input_videos" / "CapturedFrames_*" / "gt_joints.csv")
-    out_base = ROOT / "03_joint_angle_mae" / "joint_angle_mae_csv"
-    script = ROOT / "03_joint_angle_mae" / "coordinate_angle_comparison.py"
+    mp_base = ROOT / "20_pose_correction" / "mediapipe_processed_csv"
+    gt_glob = str(ROOT / "10_input_videos" / "CapturedFrames_*" / "gt_joints.csv")
+    out_base = ROOT / "30_joint_angle_mae" / "joint_angle_mae_csv"
+    script = ROOT / "30_joint_angle_mae" / "coordinate_angle_comparison.py"
 
     for y in Y_LAYERS:
         mp_dir = mp_base / y
@@ -102,7 +102,7 @@ def step_angle_mae() -> bool:
             "--mp_csv", mp_pattern,
             "--gt_csv", gt_glob,
             "--output_csv", str(out_csv),
-        ], ROOT / "03_joint_angle_mae")
+        ], ROOT / "30_joint_angle_mae")
         if not ok:
             return False
     return True
@@ -111,15 +111,15 @@ def step_angle_mae() -> bool:
 def step_mae_stats() -> bool:
     return run_cmd(
         [sys.executable, "create_statistics_table.py"],
-        ROOT / "03_joint_angle_mae",
+        ROOT / "30_joint_angle_mae",
     )
 
 
 def step_max_angle() -> bool:
     """層別に calculate_max_angle_error.py を実行（04）"""
-    mp_base = ROOT / "02_mediapipe_v2" / "mediapipe_processed_csv"
-    gt_glob = str(ROOT / "01_input_videos" / "CapturedFrames_*" / "gt_joints.csv")
-    script = ROOT / "04_max_angle_error" / "calculate_max_angle_error.py"
+    mp_base = ROOT / "20_pose_correction" / "mediapipe_processed_csv"
+    gt_glob = str(ROOT / "10_input_videos" / "CapturedFrames_*" / "gt_joints.csv")
+    script = ROOT / "31_max_angle_error" / "calculate_max_angle_error.py"
 
     for y in Y_LAYERS:
         mp_dir = mp_base / y
@@ -127,7 +127,7 @@ def step_max_angle() -> bool:
         if n == 0:
             print(f"スキップ（CSVなし）: {mp_dir}")
             continue
-        out_dir = ROOT / "04_max_angle_error" / "calculation" / y
+        out_dir = ROOT / "31_max_angle_error" / "calculation" / y
         out_dir.mkdir(parents=True, exist_ok=True)
         out_csv = out_dir / "coordinate_max_angle_error.csv"
         ok = run_cmd([
@@ -135,14 +135,14 @@ def step_max_angle() -> bool:
             "--mp_csv", str(mp_dir / "CapturedFrames_*.csv"),
             "--gt_csv", gt_glob,
             "--output_csv", str(out_csv),
-        ], ROOT / "04_max_angle_error")
+        ], ROOT / "31_max_angle_error")
         if not ok:
             return False
     return True
 
 
 def step_direction() -> bool:
-    cwd = ROOT / "05_direction_detection"
+    cwd = ROOT / "32_direction_detection"
     if not run_cmd([sys.executable, "process_all_data.py"], cwd):
         return False
     return run_cmd([sys.executable, "scripts/compute_correlation.py"], cwd)
@@ -150,20 +150,20 @@ def step_direction() -> bool:
 
 def step_theta_verify() -> bool:
     """06 θ・座標系検証（失敗しても警告のみで継続可）"""
-    ok = run_cmd([sys.executable, "run_all.py"], ROOT / "06_theta_verification")
+    ok = run_cmd([sys.executable, "run_all.py"], ROOT / "33_theta_verification")
     if not ok:
-        print("警告: 06_theta_verification が失敗（継続）")
+        print("警告: 33_theta_verification が失敗（継続）")
     return True  # 検証失敗でパイプライン全体を止めない
 
 
 def step_dashboard() -> bool:
     """07 ダッシュボード起動（ブロッキング）"""
     print("ダッシュボード: http://127.0.0.1:8050/")
-    return run_cmd([sys.executable, "07_dashboard/app.py"], ROOT)
+    return run_cmd([sys.executable, "50_dashboard/app.py"], ROOT)
 
 
 def step_calibration() -> bool:
-    cwd = ROOT / "09_calibration_framework"
+    cwd = ROOT / "40_calibration_framework"
     if not run_cmd([sys.executable, "experiments/run_calibration.py"], cwd):
         return False
     if not run_cmd([sys.executable, "experiments/run_evaluation.py"], cwd):
@@ -186,7 +186,7 @@ def step_calibration() -> bool:
 
 
 def count_mp_csv() -> int:
-    base = ROOT / "02_mediapipe_v2" / "mediapipe_processed_csv"
+    base = ROOT / "20_pose_correction" / "mediapipe_processed_csv"
     return len(list(base.rglob("CapturedFrames_*.csv"))) if base.exists() else 0
 
 

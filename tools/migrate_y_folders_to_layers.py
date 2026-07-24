@@ -41,7 +41,7 @@ def parse_captured_y(stem: str) -> float | None:
 
 
 def migrate_02_mp(dry: bool) -> int:
-    mp_root = REPO / "02_mediapipe_processed"
+    mp_root = REPO / "90_legacy_v1/mediapipe_processed"
     moved = 0
     for bucket in OLD_MP_BUCKETS:
         src = mp_root / bucket
@@ -66,7 +66,7 @@ def migrate_02_mp(dry: bool) -> int:
 
 
 def migrate_03_mae(dry: bool) -> int:
-    mae_root = REPO / "03_joint_angle_mae"
+    mae_root = REPO / "30_joint_angle_mae"
     written = 0
     for bucket in OLD_MAE_BUCKETS:
         src_csv = mae_root / bucket / "coordinate_angle_mae.csv"
@@ -98,18 +98,18 @@ def main() -> None:
     p.add_argument("--dry-run", action="store_true")
     args = p.parse_args()
 
-    print("=== 02_mediapipe_processed ===")
+    print("=== 90_legacy_v1/mediapipe_processed ===")
     n = migrate_02_mp(args.dry_run)
     print(f"moved files: {n}")
 
-    print("=== 03_joint_angle_mae (coordinate_angle_mae.csv) ===")
+    print("=== 30_joint_angle_mae (coordinate_angle_mae.csv) ===")
     n2 = migrate_03_mae(args.dry_run)
     print(f"layer writes: {n2}")
 
     if args.dry_run:
         print("\n(dry-run: no changes written)")
     else:
-        mp_root = REPO / "02_mediapipe_processed"
+        mp_root = REPO / "90_legacy_v1/mediapipe_processed"
         for bucket in OLD_MP_BUCKETS:
             p = mp_root / bucket
             if p.is_dir() and not any(p.iterdir()):

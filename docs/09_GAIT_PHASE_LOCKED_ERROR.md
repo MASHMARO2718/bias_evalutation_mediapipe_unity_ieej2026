@@ -113,7 +113,7 @@ Model 4S の「視点ビン」思想の適用範囲が明確になった:
 
 ## 8. 対応する図
 
-- `02_mediapipe_v2/gt_free_model/cheatsheet_bias_tables.png`
+- `20_pose_correction/gt_free_model/cheatsheet_bias_tables.png`
   （= `paper/IEEJ_02/resume/fig/plot/10_gt_free_cheatsheet_bias_tables.png`）
   — バイアス表 b(z)。膝のパネルに歩行周期の規則的な振動、肘のパネルに
   緩やかな大バイアスが見え、§4 の対比がそのまま絵になっている

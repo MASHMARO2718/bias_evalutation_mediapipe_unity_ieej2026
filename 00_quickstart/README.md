@@ -30,12 +30,12 @@ pip install -r requirements.txt
 
 ### 2. データ
 
-`01_input_videos/CapturedFrames_{X}_{Y}_{Z}/` に次があること:
+`10_input_videos/CapturedFrames_{X}_{Y}_{Z}/` に次があること:
 
 - `video.mp4`
 - `gt_joints.csv`
 
-MediaPipe CSV は `02_mediapipe_v2/mediapipe_processed_csv/Y=*/`（未処理なら次のコマンドに `--with-mediapipe`）。
+MediaPipe CSV は `20_pose_correction/mediapipe_processed_csv/Y=*/`（未処理なら次のコマンドに `--with-mediapipe`）。
 
 ### 3. パイプライン
 
@@ -49,8 +49,8 @@ python run_v2_pipeline.py --no-dashboard   # GUI なし
 
 | GUI | コマンド | URL |
 |-----|----------|-----|
-| 補正・時系列（推奨） | `python 09_calibration_framework/dashboard/app.py` | http://127.0.0.1:8051/ |
-| 旧統合 GUI | `python 07_dashboard/app.py` | http://127.0.0.1:8050/ |
+| 補正・時系列（推奨） | `python 40_calibration_framework/dashboard/app.py` | http://127.0.0.1:8051/ |
+| 旧統合 GUI | `python 50_dashboard/app.py` | http://127.0.0.1:8050/ |
 
 ---
 
@@ -59,10 +59,10 @@ python run_v2_pipeline.py --no-dashboard   # GUI なし
 `config.py` で `DATASET_VERSION = "v1"` にしたうえで:
 
 ```bash
-# 01_input_photos/CapturedFrames_*/ に JPG + synced GT
+# 90_legacy_v1/input_photos/CapturedFrames_*/ に JPG + synced GT
 python run.py
 python run.py --no-mediapipe   # 02 が既にある場合
-python 07_dashboard/app.py     # http://127.0.0.1:8050/
+python 50_dashboard/app.py     # http://127.0.0.1:8050/
 ```
 
 v1 は同期ずれ（約 −3 フレーム）があります。詳細: [`docs/03_SYNC_ISSUE_REPORT.md`](../docs/03_SYNC_ISSUE_REPORT.md)

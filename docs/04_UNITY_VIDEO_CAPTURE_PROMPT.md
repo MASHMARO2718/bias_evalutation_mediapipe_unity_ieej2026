@@ -32,7 +32,7 @@ Unity の `CaptureSystemManager.cs` が以下の処理を行っていました�
 
 **出力ファイル構造：**
 ```
-01_input_photos/
+90_legacy_v1/input_photos/
   CapturedFrames_{X}_{Y}_{Z}/
     frame_0000.jpg
     frame_0001.jpg
@@ -70,7 +70,7 @@ synced_joint_positions.csv
 ### 出力ファイル構造（新方式）
 
 ```
-01_input_videos/
+10_input_videos/
   CapturedFrames_{X}_{Y}_{Z}/
     video.mp4            ← 解像度 1280×720, 30fps, 107フレーム
     gt_joints.csv        ← このカメラ位置の GT データ（frame_id 同期済み）
@@ -170,7 +170,7 @@ foreach camera_position in 505_positions:
 
 既存の Python パイプラインが以下を期待しています：
 
-- `02_mediapipe_processed/mediapipe_processed_csv/Y={y}/CapturedFrames_{x}_{y}_{z}.csv`
+- `90_legacy_v1/mediapipe_processed/mediapipe_processed_csv/Y={y}/CapturedFrames_{x}_{y}_{z}.csv`
   - 列: `frame_id, landmark, x, y, z, visibility`
 
 新方式では動画から MediaPipe を実行して同じ形式の CSV を生成するバッチスクリプトを
@@ -298,7 +298,7 @@ private void Update()
 書き換え後の同期確認は以下で行います：
 
 ```python
-# 09_calibration_framework/scripts/plot_angle_timeseries.py を実行し
+# 40_calibration_framework/scripts/plot_angle_timeseries.py を実行し
 # 相互相関ラグが 0 フレームになることを確認
 python scripts/plot_angle_timeseries.py --camera CapturedFrames_4.0_1.0_0.0 --joints R_Elbow
 

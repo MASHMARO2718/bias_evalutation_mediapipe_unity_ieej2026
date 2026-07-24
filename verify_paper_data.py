@@ -5,8 +5,8 @@ from pathlib import Path
 import pandas as pd
 
 BASE = Path(__file__).parent
-MAE_DIR = BASE / "03_joint_angle_mae"
-DIR05 = BASE / "05_direction_detection"
+MAE_DIR = BASE / "30_joint_angle_mae"
+DIR05 = BASE / "32_direction_detection"
 
 # IEEJ_ja 表 tab:joint_angle_error（列: mean, median, max deg）
 PAPER_TABLE1 = {
@@ -42,7 +42,7 @@ PAPER_HIP_FROM_DETAIL = {
 
 
 def main() -> None:
-    print("=== 1. Table 1 (Joint Angle MAE) - primary: 03_joint_angle_mae ===")
+    print("=== 1. Table 1 (Joint Angle MAE) - primary: 30_joint_angle_mae ===")
     mae_layers = [
         MAE_DIR / "Y=0.5" / "coordinate_angle_mae.csv",
         MAE_DIR / "Y=1.0" / "coordinate_angle_mae.csv",
@@ -71,7 +71,7 @@ def main() -> None:
             print(f"  {col}: mean={m:.1f} med={med:.1f} max={mx:.1f}  paper={paper}  OK={ok}")
 
     js_path = DIR05 / "output" / "processed_data" / "joint_summary.csv"
-    print("\n=== 2. Direction angles - joint_summary.csv (05_direction_detection) ===")
+    print("\n=== 2. Direction angles - joint_summary.csv (32_direction_detection) ===")
     if not js_path.is_file():
         print(f"  スキップ: {js_path} がありません")
     else:
@@ -107,9 +107,9 @@ def main() -> None:
             )
 
     print("\n=== 4. Data source memo ===")
-    print("  05_direction_detection: GT=synced_joint_positions, MP=02_mediapipe_processed")
-    print("  03_joint_angle_mae: per-camera MAE CSV（run_cal_mae 等で生成）→ create_statistics_table で集計可")
-    print("  Y-flip: 方向角のみ 05_direction_detection/scripts/coordinate_transform.py")
+    print("  32_direction_detection: GT=synced_joint_positions, MP=90_legacy_v1/mediapipe_processed")
+    print("  30_joint_angle_mae: per-camera MAE CSV（run_cal_mae 等で生成）→ create_statistics_table で集計可")
+    print("  Y-flip: 方向角のみ 32_direction_detection/scripts/coordinate_transform.py")
     print("  関節角 MAE は座標反転の影響を受けない（3点角の幾何）")
 
 

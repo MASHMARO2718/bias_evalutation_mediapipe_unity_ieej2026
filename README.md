@@ -27,8 +27,8 @@ python run_world_phase_correction.py --history # 過程の実験（docs/07, 08, 
 |------|------------|
 | データセット | **v2**（動画 + フレーム同期 GT） |
 | 切替 | ルート [`config.py`](config.py) の `DATASET_VERSION` |
-| 補正ダッシュボード | http://localhost:8051/（`09_calibration_framework`） |
-| 旧ダッシュボード | http://localhost:8050/（`07_dashboard`） |
+| 補正ダッシュボード | http://localhost:8051/（`40_calibration_framework`） |
+| 旧ダッシュボード | http://localhost:8050/（`50_dashboard`） |
 
 ## 主要結果ハイライト（2026-07-19 時点）
 
@@ -40,7 +40,7 @@ python run_world_phase_correction.py --history # 過程の実験（docs/07, 08, 
 | 系統誤差は視方位でなく**歩行位相ロック**という発見 | カメラ 0.4 m 移動 = 誤差波形 ~8 フレームずれ | [`docs/08`](docs/08_GT_FREE_CHEATSHEET_MODEL.md) §4 |
 | UV からの腰軌跡復元（大域変位の GT フリー取得） | 平均誤差 **0.067 m**（真横 3 m） | [`docs/07`](docs/07_UV_PSEUDO_WORLD_CORRECTION.md) |
 | 膝奥行き誤差の構造分解（bin+ARIMA、in-sample 上限） | \|e_X\| **82〜90%** 減 | [`docs/07`](docs/07_UV_PSEUDO_WORLD_CORRECTION.md) §7 |
-| Model 4S 符号付き視点ビン補正（既存主結果） | \|Δθ\| **65.9 / 72.6%** 改善 | `09_calibration_framework/` |
+| Model 4S 符号付き視点ビン補正（既存主結果） | \|Δθ\| **65.9 / 72.6%** 改善 | `40_calibration_framework/` |
 
 改訂版アブストラクト＋キーワード候補: [`docs/08`](docs/08_GT_FREE_CHEATSHEET_MODEL.md) §7 ·
 論文構成の検討材料: [`paper/IEEJ_02/resume/`](paper/IEEJ_02/resume/README.md)
@@ -84,7 +84,7 @@ python run_v2_pipeline.py --no-dashboard
 補正フレームワーク GUI のみ使う場合:
 
 ```bash
-cd 09_calibration_framework/dashboard
+cd 40_calibration_framework/dashboard
 python app.py
 # → http://localhost:8051/
 ```
@@ -99,10 +99,10 @@ v1（JPG・同期ずれあり）を使う場合は `DATASET_VERSION = "v1"` に�
 |--|-------------|-------------------|
 | 収集 | 2025-12 | 2026-07 |
 | カメラ数 | 約 289（一部高さ層） | **576**（4 高さ × 144 位置） |
-| 入力 | `01_input_photos/` JPG × ~107/カメラ | `01_input_videos/` `video.mp4` + `gt_joints.csv` |
+| 入力 | `90_legacy_v1/input_photos/` JPG × ~107/カメラ | `10_input_videos/` `video.mp4` + `gt_joints.csv` |
 | GT | `synced_joint_positions_*.csv` | `gt_joints.csv`（`frame_id` / `time_sec`） |
 | 同期 | 約 −3 フレームずれ | フレーム同期済み |
-| MediaPipe | `02_mediapipe_processed/` | `02_mediapipe_v2/mediapipe_processed_csv/` |
+| MediaPipe | `90_legacy_v1/mediapipe_processed/` | `20_pose_correction/mediapipe_processed_csv/` |
 | 論文 | IEEJ_01（提出済み） | IEEJ_02（補正・再評価） |
 
 高さ層は共通で `Y=0.5 / 1.0 / 1.5 / 2.0`。フォルダ名は `CapturedFrames_{X}_{Y}_{Z}`（メートル）。
@@ -127,11 +127,11 @@ v1（JPG・同期ずれあり）を使う場合は `DATASET_VERSION = "v1"` に�
 │
 ├── 00_quickstart/            # 初見向けメモ（主に v1 手順）
 │
-├── 01_input_photos/          # [v1] JPG + synced GT（カメラごとサブフォルダ）
-├── 01_input_videos/          # [v2] video.mp4 + gt_joints.csv（576 カメラ）
+├── 90_legacy_v1/input_photos/          # [v1] JPG + synced GT（カメラごとサブフォルダ）
+├── 10_input_videos/          # [v2] video.mp4 + gt_joints.csv（576 カメラ）
 │
-├── 02_mediapipe_processed/   # [v1] Pose CSV（Y=*/CapturedFrames_*.csv）
-├── 02_mediapipe_v2/          # [v2] Pose 処理・解析・オーバーレイ
+├── 90_legacy_v1/mediapipe_processed/   # [v1] Pose CSV（Y=*/CapturedFrames_*.csv）
+├── 20_pose_correction/          # [v2] Pose 処理・解析・オーバーレイ
 │   ├── mediapipe_video_processor.py
 │   ├── mediapipe_processed_csv/Y=*/
 │   ├── overlay_mp_landmarks.py      # CSV を video に骨格重ね（再検出なし）
@@ -141,12 +141,12 @@ v1（JPG・同期ずれあり）を使う場合は `DATASET_VERSION = "v1"` に�
 │   ├── run_uv_pseudo_world_correction.py  # UV 擬似ワールド補正（GT フリー）
 │   └── uv_pseudo_world_correction/  # 同・結果（results_std_k3 / results_mad_k5）
 │
-├── 03_joint_angle_mae/       # 3点角 MAE（層別 CSV・統合表・ヒートマップ）
-├── 04_max_angle_error/       # 最大角度誤差
-├── 05_direction_detection/   # 方向角・相関（論文 processed 系の主出力）
-├── 06_theta_verification/    # θ・座標系検証
-├── 07_dashboard/             # Dash 可視化（port 8050）
-├── 09_calibration_framework/ # ★ パラメトリック補正（研究本体 + GUI 8051）
+├── 30_joint_angle_mae/       # 3点角 MAE（層別 CSV・統合表・ヒートマップ）
+├── 31_max_angle_error/       # 最大角度誤差
+├── 32_direction_detection/   # 方向角・相関（論文 processed 系の主出力）
+├── 33_theta_verification/    # θ・座標系検証
+├── 50_dashboard/             # Dash 可視化（port 8050）
+├── 40_calibration_framework/ # ★ パラメトリック補正（研究本体 + GUI 8051）
 │
 ├── docs/                     # プロジェクト横断ドキュメント
 ├── paper/                    # IEEJ_01 / IEEJ_02
@@ -155,7 +155,7 @@ v1（JPG・同期ずれあり）を使う場合は `DATASET_VERSION = "v1"` に�
 └── _backup_v1_outputs_*/     # v2 再実行前に退避した v1 出力
 ```
 
-番号フォルダは処理段階の目安です。**現在の主戦場は v2 入力 → `02_mediapipe_v2` → `03`〜`07` → `09`** です。
+番号フォルダは処理段階の目安です。**現在の主戦場は v2 入力 → `20_pose_correction` → `03`〜`07` → `09`** です。
 
 ---
 
@@ -165,8 +165,8 @@ v1（JPG・同期ずれあり）を使う場合は `DATASET_VERSION = "v1"` に�
 
 | パス | 中身 |
 |------|------|
-| `01_input_videos/CapturedFrames_X_Y_Z/` | `video.mp4`（例: 1280×720, ~105f, 30fps）+ `gt_joints.csv` |
-| `01_input_photos/CapturedFrames_X_Y_Z/` | JPG 連番 + `synced_joint_positions_*.csv`（v1） |
+| `10_input_videos/CapturedFrames_X_Y_Z/` | `video.mp4`（例: 1280×720, ~105f, 30fps）+ `gt_joints.csv` |
+| `90_legacy_v1/input_photos/CapturedFrames_X_Y_Z/` | JPG 連番 + `synced_joint_positions_*.csv`（v1） |
 
 ### MediaPipe（v2）
 
@@ -188,25 +188,25 @@ v1（JPG・同期ずれあり）を使う場合は `DATASET_VERSION = "v1"` に�
 
 ```bash
 # 1 カメラ
-python 02_mediapipe_v2/overlay_mp_landmarks.py --camera 3.0_1.0_0.0 --overwrite
+python 20_pose_correction/overlay_mp_landmarks.py --camera 3.0_1.0_0.0 --overwrite
 
 # 全カメラ
-python 02_mediapipe_v2/overlay_mp_landmarks.py
+python 20_pose_correction/overlay_mp_landmarks.py
 ```
 
 ### 解析パイプライン（03〜07）
 
 | フォルダ | 役割 | 主な出力 |
 |----------|------|----------|
-| `03_joint_angle_mae/` | GT vs MP の 3 点関節角 MAE | `joint_angle_mae_csv/Y=*/` |
-| `04_max_angle_error/` | 最大角度誤差・ヒートマップ | `calculation/`, `max_angle_error_heatmap/` |
-| `05_direction_detection/` | 方位・相関・processed CSV | `output/processed_data/` 等 |
-| `06_theta_verification/` | 座標・θ 検証 | `output/`, `coordinate_fix_verification/` |
-| `07_dashboard/` | 旧統合ダッシュボード | port **8050** |
+| `30_joint_angle_mae/` | GT vs MP の 3 点関節角 MAE | `joint_angle_mae_csv/Y=*/` |
+| `31_max_angle_error/` | 最大角度誤差・ヒートマップ | `calculation/`, `max_angle_error_heatmap/` |
+| `32_direction_detection/` | 方位・相関・processed CSV | `output/processed_data/` 等 |
+| `33_theta_verification/` | 座標・θ 検証 | `output/`, `coordinate_fix_verification/` |
+| `50_dashboard/` | 旧統合ダッシュボード | port **8050** |
 
 ### 補正フレームワーク（09）
 
-詳細は [`09_calibration_framework/README.md`](09_calibration_framework/README.md)。
+詳細は [`40_calibration_framework/README.md`](40_calibration_framework/README.md)。
 
 | サブパス | 役割 |
 |----------|------|
@@ -219,7 +219,7 @@ python 02_mediapipe_v2/overlay_mp_landmarks.py
 | `outputs/` | バイアステーブル・評価 CSV・図 |
 
 ```bash
-cd 09_calibration_framework
+cd 40_calibration_framework
 python experiments/run_calibration.py
 python experiments/run_evaluation.py
 
@@ -261,10 +261,10 @@ python scripts/batch_angle_timeseries.py --output-version v3 --frame-xlim 0 120
 | `python run_v2_pipeline.py --step N` | 特定ステップのみ |
 | `python run.py` | **v1** 全パイプライン |
 | `python run.py --no-mediapipe` | v1 で 02 以降のみ |
-| `python 07_dashboard/app.py` | 旧 GUI → :8050 |
-| `python 09_calibration_framework/dashboard/app.py` | 補正 GUI → :8051 |
-| `python 02_mediapipe_v2/overlay_mp_landmarks.py` | MP 骨格オーバーレイ動画 |
-| `python 02_mediapipe_v2/run_uv_pseudo_world_correction.py --torso-2d --robust-sigma --k-sigma 5` | UV 擬似ワールド補正（推奨構成） |
+| `python 50_dashboard/app.py` | 旧 GUI → :8050 |
+| `python 40_calibration_framework/dashboard/app.py` | 補正 GUI → :8051 |
+| `python 20_pose_correction/overlay_mp_landmarks.py` | MP 骨格オーバーレイ動画 |
+| `python 20_pose_correction/run_uv_pseudo_world_correction.py --torso-2d --robust-sigma --k-sigma 5` | UV 擬似ワールド補正（推奨構成） |
 | `python verify_paper_data.py` | 論文数値の整合確認 |
 | `docker compose up --build` | Docker でダッシュボード（:8050） |
 
@@ -286,8 +286,8 @@ python scripts/batch_angle_timeseries.py --output-version v3 --frame-xlim 0 120
 
 | GUI | 起動 | URL | 主な用途 |
 |-----|------|-----|----------|
-| `07_dashboard` | `python 07_dashboard/app.py` | :8050 | 方向角・骨格など旧パイプライン可視化 |
-| `09` Calibration | `python 09_calibration_framework/dashboard/app.py` | :8051 | ビン構造・補正モデル・角度時系列（カメラマップ付き） |
+| `50_dashboard` | `python 50_dashboard/app.py` | :8050 | 方向角・骨格など旧パイプライン可視化 |
+| `09` Calibration | `python 40_calibration_framework/dashboard/app.py` | :8051 | ビン構造・補正モデル・角度時系列（カメラマップ付き） |
 
 ---
 
@@ -327,7 +327,7 @@ pdflatex main.tex && pdflatex main.tex
 - 解析コードは GitHub を正とします。
 - `**/*.mp4` は `.gitignore` 対象（入力動画・オーバーレイはローカル保管）。
 - MediaPipe 中間 CSV（ZIP）: DOI [10.5281/zenodo.19296530](https://doi.org/10.5281/zenodo.19296530)  
-  展開後の `mediapipe_processed_csv/Y=0.5/` … `Y=2.0/` を `02_mediapipe_processed/` 配下に置くと v1 パイプラインと整合します。
+  展開後の `mediapipe_processed_csv/Y=0.5/` … `Y=2.0/` を `90_legacy_v1/mediapipe_processed/` 配下に置くと v1 パイプラインと整合します。
 
 ---
 
@@ -337,12 +337,12 @@ pdflatex main.tex && pdflatex main.tex
 
 | 対象 | 用途 |
 |------|------|
-| `06_theta_verification/test_*.py`, `run_all.py` | 肘誤差・座標系の検証テスト |
+| `33_theta_verification/test_*.py`, `run_all.py` | 肘誤差・座標系の検証テスト |
 | `paper/create_camera_layout.py`, `paper/source/prepare_ieej_overleaf.py` | 論文用図・IEEJ 同梱物の同期 |
 
 注意点:
 
-- **`03_joint_angle_mae`**: `Y=*/coordinate_angle_mae.csv` が無いと
+- **`30_joint_angle_mae`**: `Y=*/coordinate_angle_mae.csv` が無いと
   `verify_paper_data.py` のステップ 1・表 1 検証はスキップまたは失敗します。
 - **中間生成物の実体**は `data_storage/` にあり、旧パスには Windows
   ジャンクションが張られています。構成は [`data_storage/README.md`](data_storage/README.md)。
@@ -356,6 +356,6 @@ pdflatex main.tex && pdflatex main.tex
 | [`00_quickstart/`](00_quickstart/) | 最小手順（主に v1） |
 | [`docs/00_PROGRESS.md`](docs/00_PROGRESS.md) | 現状と作業ログ |
 | [`docs/02_REPRODUCTION.md`](docs/02_REPRODUCTION.md) | 再現性 |
-| [`09_calibration_framework/README.md`](09_calibration_framework/README.md) | 補正フレームワーク |
-| [`09_calibration_framework/docs/07_correction_models.md`](09_calibration_framework/docs/07_correction_models.md) | 補正モデル 2–6 の説明 |
+| [`40_calibration_framework/README.md`](40_calibration_framework/README.md) | 補正フレームワーク |
+| [`40_calibration_framework/docs/07_correction_models.md`](40_calibration_framework/docs/07_correction_models.md) | 補正モデル 2–6 の説明 |
 | [`data_storage/README.md`](data_storage/README.md) | 中間生成物の置き場とフォルダ対応 |

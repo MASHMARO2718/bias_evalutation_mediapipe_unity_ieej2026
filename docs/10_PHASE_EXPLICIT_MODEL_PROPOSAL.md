@@ -1,8 +1,8 @@
 # 位相明示型 GT フリー補正モデル — 設計提案と実装検証
 
 **作成**: 2026-07-19（同日 実装・検証済み → §7）
-**状態**: **実装済み**。`02_mediapipe_v2/run_phase_explicit_model.py` /
-出力 `02_mediapipe_v2/phase_explicit_model/`
+**状態**: **実装済み**。`20_pose_correction/run_phase_explicit_model.py` /
+出力 `20_pose_correction/phase_explicit_model/`
 **関連**: [`08_GT_FREE_CHEATSHEET_MODEL.md`](08_GT_FREE_CHEATSHEET_MODEL.md)（現行モデル）、
 [`09_GAIT_PHASE_LOCKED_ERROR.md`](09_GAIT_PHASE_LOCKED_ERROR.md)（位相ロックの発見）
 
@@ -91,7 +91,7 @@ s(t) ベースの位相は、MP が左右脚を取り違えると **π（半周�
 
 ## 7. 実装と検証結果（2026-07-19）
 
-`02_mediapipe_v2/run_phase_explicit_model.py` に §2〜3 を実装し、
+`20_pose_correction/run_phase_explicit_model.py` に §2〜3 を実装し、
 比較のため索引の異なる 4 方式を同一パイプライン上で評価した:
 
 | 方式 | 索引 | アンカー |
@@ -163,8 +163,8 @@ MP 出力 + カメラ位置・向きのみで、フレーム番号・録画開�
 
 | パス | 内容 |
 |---|---|
-| `02_mediapipe_v2/run_phase_explicit_model.py` | 4 方式の較正→検証を通し実行 |
-| `02_mediapipe_v2/phase_explicit_model/SUMMARY.md` | 数値サマリ |
+| `20_pose_correction/run_phase_explicit_model.py` | 4 方式の較正→検証を通し実行 |
+| `20_pose_correction/phase_explicit_model/SUMMARY.md` | 数値サマリ |
 | `.../phase_model_comparison.csv` | 全数値（full / trunc × 4 方式） |
 | `.../anchor_break_comparison.png` | **主図**: 4 方式 × full/破壊 の MAE 比較 |
 | `.../two_level_bias_tables.png` | 2 階建て表 g(z)・h(φ_g) の分解 |
@@ -172,4 +172,4 @@ MP 出力 + カメラ位置・向きのみで、フレーム番号・録画開�
 | `.../val_two_level_timeseries.png` | 2 階建て補正の角度時系列 |
 | `.../val_bearing_z.png` | 方位ベース絶対 z vs GT |
 
-再実行: `cd 02_mediapipe_v2 && python run_phase_explicit_model.py [--trunc 25]`
+再実行: `cd 20_pose_correction && python run_phase_explicit_model.py [--trunc 25]`

@@ -1,8 +1,8 @@
 # GT フリー補正モデルの再構築（カンニングペーパー方式）と別カメラ検証
 
 **作成**: 2026-07-19
-**実装**: `02_mediapipe_v2/run_gt_free_model.py`
-**出力**: `02_mediapipe_v2/gt_free_model/`
+**実装**: `20_pose_correction/run_gt_free_model.py`
+**出力**: `20_pose_correction/gt_free_model/`
 
 docs/07 の探究（UV 復元・MAD フィルタ・bin+ARIMA）を踏まえ、
 **推論時に GT を一切使わないパイプライン**として再構築し、
@@ -43,7 +43,7 @@ docs/07 の探究（UV 復元・MAD フィルタ・bin+ARIMA）を踏まえ、
 ## 2. 検証条件
 
 - **検証カメラ**: (3.2, 1.1, 0.4) — 較正カメラから X+0.2 / Y+0.1 / Z+0.4 m
-  （`01_input_videos/aditional__test_data/CapturedFrames_3.2_1.1_0.4/video.mp4`。
+  （`10_input_videos/aditional__test_data/CapturedFrames_3.2_1.1_0.4/video.mp4`。
   依頼文の (3.2, 1.2, 0.1) はフォルダ実体 (3.2, 1.1, 0.4) を採用）
 - 検証動画の GT: フォルダに同梱がなかったため、`CapturedFrames_4.0_1.0_0.0`
   の GT をコピーして使用（GT はワールド座標でカメラ非依存、カメラ間差 ≤3 mm、
@@ -107,8 +107,8 @@ docs/07 の探究（UV 復元・MAD フィルタ・bin+ARIMA）を踏まえ、
 
 | パス | 内容 |
 |---|---|
-| `02_mediapipe_v2/run_gt_free_model.py` | 較正→検証の通し実行スクリプト |
-| `02_mediapipe_v2/gt_free_model/cheatsheet.json` | カンニングペーパー |
+| `20_pose_correction/run_gt_free_model.py` | 較正→検証の通し実行スクリプト |
+| `20_pose_correction/gt_free_model/cheatsheet.json` | カンニングペーパー |
 | `.../SUMMARY.md` / `validation_angle_mae.csv` | 数値サマリ |
 | `.../val_angle_timeseries.png` | 検証 4 角度の GT/raw/平滑/補正の時系列（2×2） |
 | `.../per_joint/val_{L,R}_{KNEE,ELBOW}.png` | 関節ごとの個別時系列（GT / MP raw / 補正後の 3 本、MAE 併記） |
@@ -117,9 +117,9 @@ docs/07 の探究（UV 復元・MAD フィルタ・bin+ARIMA）を踏まえ、
 | `.../val_travel_and_phi.png` | ẑ(t) 推定 vs GT・φ(t) の診断 |
 | `.../analysis/plot_per_joint_timeseries.py` | 個別時系列プロットの再生成スクリプト |
 
-再実行: `cd 02_mediapipe_v2 && python run_gt_free_model.py`
+再実行: `cd 20_pose_correction && python run_gt_free_model.py`
 （検証動画の MP 処理は `mediapipe_video_processor.py --input_dir
-../01_input_videos/aditional__test_data --output_base_dir
+../10_input_videos/aditional__test_data --output_base_dir
 mediapipe_processed_csv_additional` で作成済み）
 
 ## 7. アブストラクト改訂版（2026-07-19、GT フリー検証を反映）

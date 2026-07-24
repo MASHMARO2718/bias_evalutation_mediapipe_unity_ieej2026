@@ -1,15 +1,15 @@
 # UV 擬似ワールド補正 — GT フリー時系列フィルタの実装と検証
 
 作成: 2026-07-18 / 最終更新: 2026-07-19(§7–8 追記)
-実装: `02_mediapipe_v2/run_uv_pseudo_world_correction.py`
-出力: `02_mediapipe_v2/uv_pseudo_world_correction/results*/`
-解析スクリプト: `02_mediapipe_v2/uv_pseudo_world_correction/analysis/`
+実装: `20_pose_correction/run_uv_pseudo_world_correction.py`
+出力: `20_pose_correction/uv_pseudo_world_correction/results*/`
+解析スクリプト: `20_pose_correction/uv_pseudo_world_correction/analysis/`
 
 ---
 
 ## 1. 背景と目的
 
-09_calibration_framework の補正(Model 4S 系)は Phase B の適用時に
+40_calibration_framework の補正(Model 4S 系)は Phase B の適用時に
 「被写体に対するカメラの相対視点」をフォルダ名(カメラ真値位置)から得ており、
 実環境では自己完結しない。一方 MediaPipe の出力は:
 
@@ -60,11 +60,11 @@ P = s · ( (u−0.5)·W,  −(v−0.5)·H,  z·W )      [m]
 
 ```bash
 # 推奨構成(2D体幹スケール + MAD + K=5)
-python 02_mediapipe_v2/run_uv_pseudo_world_correction.py \
+python 20_pose_correction/run_uv_pseudo_world_correction.py \
     --torso-2d --robust-sigma --k-sigma 5 --outdir results_mad_k5_2d
 
 # 単一カメラ・元仕様(std, K=3)
-python 02_mediapipe_v2/run_uv_pseudo_world_correction.py --camera 3.0_1.0_0.0
+python 20_pose_correction/run_uv_pseudo_world_correction.py --camera 3.0_1.0_0.0
 ```
 
 | オプション | 意味 |
@@ -176,7 +176,7 @@ K は用途で選ぶ: バランス K=5 / グリッチのみ K≈15–20。
 
 | MP ランドマーク | 現行 | 監査の最良 | 備考 |
 |---|---|---|---|
-| SHOULDER | `LeftShoulder`(**鎖骨**) | **`LeftUpperArm`**(肩関節) | 7–9 cm の系統誤差。**`05_direction_detection/scripts/data_loader.py:90`(論文パイプライン上流)にも同じ誤り**。`03_joint_angle_mae` は UpperArm 使用で正しい |
+| SHOULDER | `LeftShoulder`(**鎖骨**) | **`LeftUpperArm`**(肩関節) | 7–9 cm の系統誤差。**`32_direction_detection/scripts/data_loader.py:90`(論文パイプライン上流)にも同じ誤り**。`30_joint_angle_mae` は UpperArm 使用で正しい |
 | HIP | `Hips` 複製 | 左右別 `UpperLeg` | |
 | ELBOW/KNEE/WRIST | LowerArm/LowerLeg/Hand | 同じ | 現行で正しい |
 | ANKLE | `LeftFoot` | `LowerLeg+Foot` 中点でも残差 0.28–0.33 m | マッピングでは救えない(MP 足首固有の誤差) |
@@ -220,8 +220,8 @@ raw の肩バイアス量は定義差で水増しされている。**05 を修�
 
 | パス | 内容 |
 |---|---|
-| `02_mediapipe_v2/run_uv_pseudo_world_correction.py` | 本体(全オプション) |
-| `02_mediapipe_v2/uv_pseudo_world_correction/results_std_k3/` | std K=3(初期仕様)全カメラ |
+| `20_pose_correction/run_uv_pseudo_world_correction.py` | 本体(全オプション) |
+| `20_pose_correction/uv_pseudo_world_correction/results_std_k3/` | std K=3(初期仕様)全カメラ |
 | `.../results_mad_k5/` | MAD K=5 全カメラ + 検証プロット(**推奨構成**) |
 | `.../results_mad_k5/plots/hip_center_error_scale_fix.png` | V 字消滅の検証図 |
 | `docs/06_MOVING_AVERAGE_NOISE_REJECTION.md` | GT 基準の先行実装(座標系の流儀を共有) |

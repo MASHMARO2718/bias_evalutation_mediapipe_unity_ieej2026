@@ -12,8 +12,8 @@ world landmarks + 歩行位相索引による系統誤差補正（論文 IEEJ_02
 
 やること（既定 = 論文の最終結果だけを再現）:
 
-  0. world landmarks 抽出   → 02_mediapipe_v2/mediapipe_world_csv/
-  1. world + 位相索引の補正 → 02_mediapipe_v2/world_landmark_model/   ★最終形
+  0. world landmarks 抽出   → 20_pose_correction/mediapipe_world_csv/
+  1. world + 位相索引の補正 → 20_pose_correction/world_landmark_model/   ★最終形
 
 過程の実験（docs/07, 08, 10）は既定では走らない。--history で再現できる。
 
@@ -36,7 +36,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-MP = ROOT / "02_mediapipe_v2"
+MP = ROOT / "20_pose_correction"
 
 # 補正モデルが読む入力（較正 1 本 + 検証 1 本）
 CALIB_CAM = "CapturedFrames_3.0_1.0_0.0"
@@ -44,11 +44,11 @@ VAL_CAM = "CapturedFrames_3.2_1.1_0.4"
 
 WORLD_DIR = MP / "mediapipe_world_csv"
 REQUIRED_INPUTS = [
-    (ROOT / "01_input_videos" / CALIB_CAM / "video.mp4", "較正動画"),
-    (ROOT / "01_input_videos" / CALIB_CAM / "gt_joints.csv", "較正 GT"),
-    (ROOT / "01_input_videos" / "aditional__test_data" / VAL_CAM / "video.mp4",
+    (ROOT / "10_input_videos" / CALIB_CAM / "video.mp4", "較正動画"),
+    (ROOT / "10_input_videos" / CALIB_CAM / "gt_joints.csv", "較正 GT"),
+    (ROOT / "10_input_videos" / "aditional__test_data" / VAL_CAM / "video.mp4",
      "検証動画"),
-    (ROOT / "01_input_videos" / "aditional__test_data" / VAL_CAM / "gt_joints.csv",
+    (ROOT / "10_input_videos" / "aditional__test_data" / VAL_CAM / "gt_joints.csv",
      "検証 GT"),
     (MP / "mediapipe_processed_csv" / "Y=1.0" / f"{CALIB_CAM}.csv",
      "較正 MediaPipe UV CSV"),
@@ -83,7 +83,7 @@ def check_inputs() -> bool:
     if not ok:
         print("\n入力が足りません。")
         print("  MediaPipe UV CSV が無い場合: python run_v2_pipeline.py --step 0")
-        print("  動画・GT が無い場合: 01_input_videos/ の配置を確認してください。")
+        print("  動画・GT が無い場合: 10_input_videos/ の配置を確認してください。")
     return ok
 
 

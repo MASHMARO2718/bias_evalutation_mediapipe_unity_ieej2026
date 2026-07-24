@@ -11,13 +11,13 @@ Git には **この README のみ** を追跡する（`.gitignore`: `data_storag
 
 ```
 入力 (リポジトリ / ローカル)
-  01_input_photos/          … v1 JPG + synced GT
-  01_input_videos/          … v2 video.mp4 + gt_joints.csv（本線）
+  90_legacy_v1/input_photos/          … v1 JPG + synced GT
+  10_input_videos/          … v2 video.mp4 + gt_joints.csv（本線）
         │
         ▼  MediaPipe 等
 中間生成物 ──► data_storage/intermediate/
         │
-        ▼  03〜09 / 02_mediapipe_v2 の実験スクリプト
+        ▼  03〜09 / 20_pose_correction の実験スクリプト
 実験出力 ────► data_storage/experiments/
         │
         ▼
@@ -28,7 +28,7 @@ Git には **この README のみ** を追跡する（`.gitignore`: `data_storag
 |------|-------------------|-----------------|
 | 入力 | `01_input_*`（カメラ別 raw） | `raw/`（結合マスター等のアーカイブ） |
 | MediaPipe 中間 CSV | `02_mediapipe_*` から参照（ジャンクション） | `intermediate/v1`, `intermediate/v2` |
-| 実験スクリプト | `02_mediapipe_v2/run_*.py`, `analysis/`, README | （コードは移さない） |
+| 実験スクリプト | `20_pose_correction/run_*.py`, `analysis/`, README | （コードは移さない） |
 | 実験結果 | 旧 `*/results*` パスから参照 | `experiments/*` |
 | 下流パイプライン | `03`〜`09` が MP CSV / 出力を読む | 同上ジャンクション経由 |
 | 設定 | ルート [`config.py`](../config.py) の `DATA_STORAGE` / `MP_DIR` | 実体はここに集約 |
@@ -72,35 +72,35 @@ data_storage/
 
 | コード / ドキュメントから見えるパス | data_storage 実体 | 関連スクリプト・文書 |
 |---|---|---|
-| `01_input_photos/` | （未移動・入力のまま） | v1: `run.py`, `docs/01`, `docs/03` |
-| `01_input_videos/` | `raw/v2/` に結合 GT のみ退避 | v2: `run_v2_pipeline.py`, `config.py` |
-| `02_mediapipe_processed/mediapipe_processed_csv/` | `intermediate/v1/mediapipe_processed_csv/` | `02_mediapipe_processed/mediapipe_batch_processor.py` |
-| `02_mediapipe_v2/mediapipe_processed_csv/` | `intermediate/v2/mediapipe_processed_csv/` | `mediapipe_video_processor.py`, `config.MP_DIR` |
-| `02_mediapipe_v2/mediapipe_processed_csv_additional/` | `intermediate/v2/mediapipe_processed_csv_additional/` | GT-free / phase の検証カメラ |
-| `02_mediapipe_v2/mediapipe_world_csv/` | `intermediate/v2/mediapipe_world_csv/` | `extract_world_landmarks.py` |
-| `02_mediapipe_v2/overlay_videos/` | `intermediate/v2/overlay_videos/` | `overlay_mp_landmarks.py` |
-| `02_mediapipe_v2/uv_pseudo_world_correction/results_*/` | `experiments/uv_pseudo_world_correction/results_*/` | `run_uv_pseudo_world_correction.py`, `docs/07`（README・`analysis/` はコード側） |
-| `02_mediapipe_v2/ma_noise_rejection/results/` | `experiments/ma_noise_rejection/results/` | `run_ma_noise_rejection.py`, `docs/06` |
-| `02_mediapipe_v2/error_mc_analysis/results/` | `experiments/error_mc_analysis/results/` | `run_error_mc_analysis.py`, `docs/05` |
-| `02_mediapipe_v2/gt_free_model/`（生成物） | `experiments/gt_free_model/` | `run_gt_free_model.py`, `docs/08`（`analysis/` はコード側） |
-| `02_mediapipe_v2/world_landmark_model/` | `experiments/world_landmark_model/` | `run_world_landmark_model.py`, `docs/11` |
-| `02_mediapipe_v2/phase_explicit_model/` | `experiments/phase_explicit_model/` | `run_phase_explicit_model.py`, `docs/10` |
-| `03_joint_angle_mae/joint_angle_mae_csv/*.csv` | `experiments/joint_angle_mae/` | `03_joint_angle_mae/*.py`, `run_v2_pipeline.py` |
-| `05_direction_detection/output/` | `experiments/direction_detection/output/` | `05_direction_detection/`（scripts・README はコード側）, `docs/01` |
-| `09_calibration_framework/outputs/{bias_tables,results,figures}/` | `experiments/calibration/outputs/` | `09_*/src/config.py`, `docs` 内 outputs README |
-| `09_calibration_framework/scripts/output/` | `experiments/calibration/angle_timeseries/` | `09_*/scripts/plot_angle_timeseries.py` |
+| `90_legacy_v1/input_photos/` | （未移動・入力のまま） | v1: `run.py`, `docs/01`, `docs/03` |
+| `10_input_videos/` | `raw/v2/` に結合 GT のみ退避 | v2: `run_v2_pipeline.py`, `config.py` |
+| `90_legacy_v1/mediapipe_processed/mediapipe_processed_csv/` | `intermediate/v1/mediapipe_processed_csv/` | `90_legacy_v1/mediapipe_processed/mediapipe_batch_processor.py` |
+| `20_pose_correction/mediapipe_processed_csv/` | `intermediate/v2/mediapipe_processed_csv/` | `mediapipe_video_processor.py`, `config.MP_DIR` |
+| `20_pose_correction/mediapipe_processed_csv_additional/` | `intermediate/v2/mediapipe_processed_csv_additional/` | GT-free / phase の検証カメラ |
+| `20_pose_correction/mediapipe_world_csv/` | `intermediate/v2/mediapipe_world_csv/` | `extract_world_landmarks.py` |
+| `20_pose_correction/overlay_videos/` | `intermediate/v2/overlay_videos/` | `overlay_mp_landmarks.py` |
+| `20_pose_correction/uv_pseudo_world_correction/results_*/` | `experiments/uv_pseudo_world_correction/results_*/` | `run_uv_pseudo_world_correction.py`, `docs/07`（README・`analysis/` はコード側） |
+| `20_pose_correction/ma_noise_rejection/results/` | `experiments/ma_noise_rejection/results/` | `run_ma_noise_rejection.py`, `docs/06` |
+| `20_pose_correction/error_mc_analysis/results/` | `experiments/error_mc_analysis/results/` | `run_error_mc_analysis.py`, `docs/05` |
+| `20_pose_correction/gt_free_model/`（生成物） | `experiments/gt_free_model/` | `run_gt_free_model.py`, `docs/08`（`analysis/` はコード側） |
+| `20_pose_correction/world_landmark_model/` | `experiments/world_landmark_model/` | `run_world_landmark_model.py`, `docs/11` |
+| `20_pose_correction/phase_explicit_model/` | `experiments/phase_explicit_model/` | `run_phase_explicit_model.py`, `docs/10` |
+| `30_joint_angle_mae/joint_angle_mae_csv/*.csv` | `experiments/joint_angle_mae/` | `30_joint_angle_mae/*.py`, `run_v2_pipeline.py` |
+| `32_direction_detection/output/` | `experiments/direction_detection/output/` | `32_direction_detection/`（scripts・README はコード側）, `docs/01` |
+| `40_calibration_framework/outputs/{bias_tables,results,figures}/` | `experiments/calibration/outputs/` | `09_*/src/config.py`, `docs` 内 outputs README |
+| `40_calibration_framework/scripts/output/` | `experiments/calibration/angle_timeseries/` | `09_*/scripts/plot_angle_timeseries.py` |
 | `paper/`, `docs/` | （データは置かない） | 図表は必要分だけ paper 側にコピー |
 
 ---
 
 ## パイプライン上の依存（要約）
 
-1. **入力** `01_input_videos`（または v1 の `01_input_photos`）
+1. **入力** `10_input_videos`（または v1 の `90_legacy_v1/input_photos`）
 2. **中間** `intermediate/v*/mediapipe_processed_csv` ← MediaPipe
-3. **角度 MAE** `experiments/joint_angle_mae` ← `03_joint_angle_mae`（MP CSV を読む）
-4. **方向角** `experiments/direction_detection` ← `05_direction_detection`
-5. **補正フレームワーク** `experiments/calibration` ← `09_calibration_framework`（3・5 の集計を入力）
-6. **v2 実験群**（UV / MA / ErrorMC / GT-free / world / phase）← `02_mediapipe_v2/run_*.py` が 2 の CSV と 1 の GT を読む
+3. **角度 MAE** `experiments/joint_angle_mae` ← `30_joint_angle_mae`（MP CSV を読む）
+4. **方向角** `experiments/direction_detection` ← `32_direction_detection`
+5. **補正フレームワーク** `experiments/calibration` ← `40_calibration_framework`（3・5 の集計を入力）
+6. **v2 実験群**（UV / MA / ErrorMC / GT-free / world / phase）← `20_pose_correction/run_*.py` が 2 の CSV と 1 の GT を読む
 
-v2 本線のカメラ別 GT は `01_input_videos/*/gt_joints.csv`。  
+v2 本線のカメラ別 GT は `10_input_videos/*/gt_joints.csv`。  
 `raw/v2/synced_joint_positions.csv` は結合マスターの参照用アーカイブで、現行コードは参照しない。
