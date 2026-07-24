@@ -21,12 +21,12 @@ PROJECT_ROOT = Path(__file__).parent
 DATA_STORAGE = PROJECT_ROOT / "data_storage"
 
 # ─── v1 パス（旧データ・変更禁止） ────────────────────────────────────────
-_V1_INPUT_DIR = PROJECT_ROOT / "90_legacy_v1/input_photos"          # JPG + synced_joint_positions_*.csv
-_V1_MP_DIR    = PROJECT_ROOT / "90_legacy_v1/mediapipe_processed" / "mediapipe_processed_csv"
+_V1_INPUT_DIR = PROJECT_ROOT / "9_legacy_v1/input_photos"          # JPG + synced_joint_positions_*.csv
+_V1_MP_DIR    = PROJECT_ROOT / "9_legacy_v1/mediapipe_processed" / "mediapipe_processed_csv"
 
 # ─── v2 パス（新データ） ──────────────────────────────────────────────────
-_V2_INPUT_DIR = PROJECT_ROOT / "10_input_videos"          # video.mp4 + gt_joints.csv
-_V2_MP_DIR    = PROJECT_ROOT / "20_pose_correction" / "mediapipe_processed_csv"
+_V2_INPUT_DIR = PROJECT_ROOT / "1_input"          # video.mp4 + gt_joints.csv
+_V2_MP_DIR    = PROJECT_ROOT / "2_pose" / "mediapipe_processed_csv"
 
 # ─── アクティブパス（DATASET_VERSION で自動切り替え） ─────────────────────
 if DATASET_VERSION == "v1":
@@ -48,5 +48,5 @@ GT_CSV = PROJECT_ROOT / "synced_joint_positions.csv"
 Y_RANGES = ["Y=0.5", "Y=1.0", "Y=1.5", "Y=2.0"]
 
 # ─── 処理結果フォルダ（スクリプト番号順） ────────────────────────────────
-JOINT_ANGLE_MAE_DIR = PROJECT_ROOT / "30_joint_angle_mae"
-MAX_ANGLE_ERROR_DIR = PROJECT_ROOT / "31_max_angle_error"
+JOINT_ANGLE_MAE_DIR = PROJECT_ROOT / "3_joint_angle_mae"
+MAX_ANGLE_ERROR_DIR = PROJECT_ROOT / "4_max_angle_error"

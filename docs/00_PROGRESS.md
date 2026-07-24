@@ -11,8 +11,8 @@
 |------|------|
 | 同期ずれの発見・文書化 | 完了（v1 で約 −3 フレーム） |
 | Unity 動画キャプチャ化 | 完了（別エージェント／Unity_1019） |
-| v2 生データ配置 | 完了 `10_input_videos/`（576 カメラ） |
-| MediaPipe v2 | 完了 `20_pose_correction/`（576 CSV） |
+| v2 生データ配置 | 完了 `1_input/`（576 カメラ） |
+| MediaPipe v2 | 完了 `2_pose/`（576 CSV） |
 | パイプライン 03〜07, 09 | 完了（v2 データで再実行） |
 | 位相ずれ再確認（時系列グラフ） | 完了（v1/v2 比較可能） |
 | IEEJ_02 への数値差し替え | **未着手** |
@@ -26,8 +26,8 @@
 | | v1（旧） | v2（新） |
 |--|---------|---------|
 | 収集 | 2025-12 JPG 連写 | 2026-07 動画キャプチャ |
-| 入力 | `90_legacy_v1/input_photos/` | `10_input_videos/`（video.mp4 + gt_joints.csv） |
-| MediaPipe | `90_legacy_v1/mediapipe_processed/` | `20_pose_correction/` |
+| 入力 | `9_legacy_v1/input_photos/` | `1_input/`（video.mp4 + gt_joints.csv） |
+| MediaPipe | `9_legacy_v1/mediapipe_processed/` | `2_pose/` |
 | 同期 | 約 3 フレームずれ | 概ね 0±2 フレーム |
 
 v1 処理結果の退避先: `_backup_v1_outputs_20260716_233457/`
@@ -47,14 +47,14 @@ v1 処理結果の退避先: `_backup_v1_outputs_20260716_233457/`
 2. **原因特定（Unity_1019 コード閲覧のみ）**  
    `FrameCapturer`（`WaitForEndOfFrame`）と `SyncedJointRecorder`（`Update` でカウント監視）のタイミング差 + JPG 同期 I/O。
 3. **フォルダ整理**  
-   - `10_input_videos/` 新設、動画データ移動  
-   - `20_pose_correction/` 新設  
+   - `1_input/` 新設、動画データ移動  
+   - `2_pose/` 新設  
    - `config.py` に `DATASET_VERSION` スイッチ追加  
    - 既存コード／v1 データは残置
 4. **v2 実装**  
-   - `20_pose_correction/mediapipe_video_processor.py`  
+   - `2_pose/mediapipe_video_processor.py`  
    - `tools/gt_adapter.py`（Frame/frame_id 互換）  
-   - `32_direction_detection` を per-camera GT 対応  
+   - `5_direction` を per-camera GT 対応  
    - `run_v2_pipeline.py`（03〜07, 09 通し）
 
 ### 2026-07-16 夜〜17 未明
@@ -66,8 +66,8 @@ v1 処理結果の退避先: `_backup_v1_outputs_20260716_233457/`
 7. **時系列グラフ再作成（同期確認）**  
    - 条件: `CapturedFrames_4.0_1.0_0.0`, Y=1.0, L/R Elbow・Knee  
    - 出力:  
-     - v1: `40_calibration_framework/scripts/output/v1/`  
-     - v2: `40_calibration_framework/scripts/output/v2/`
+     - v1: `7_correction/scripts/output/v1/`  
+     - v2: `7_correction/scripts/output/v2/`
 
 ---
 
@@ -95,11 +95,11 @@ v1 処理結果の退避先: `_backup_v1_outputs_20260716_233457/`
 
 ### 関節角 MAE（v2, 全カメラ平均の目安）
 
-肘・膝 ~15°、腰 ~20°、肩 ~35°（詳細は `30_joint_angle_mae/joint_angle_error_statistics.csv`）
+肘・膝 ~15°、腰 ~20°、肩 ~35°（詳細は `3_joint_angle_mae/joint_angle_error_statistics.csv`）
 
 ### 2026-07-18〜19（UV 擬似ワールド補正 — 詳細は [`07_UV_PSEUDO_WORLD_CORRECTION.md`](07_UV_PSEUDO_WORLD_CORRECTION.md)）
 
-1. **GT フリー時系列補正の実装**（`20_pose_correction/run_uv_pseudo_world_correction.py`）
+1. **GT フリー時系列補正の実装**（`2_pose/run_uv_pseudo_world_correction.py`）
    UV 大域位置から擬似ワールドを構成 → 進行方向直交成分を移動平均+3σ で置換。
    全 576 カメラで実行（484 処理 / 92 は遠方で MP 検出なし）。
 2. **前提「誤差は奥行きに乗る」を定量確認**: 補正ベクトルの 87% が視線方向。
@@ -115,14 +115,14 @@ v1 処理結果の退避先: `_backup_v1_outputs_20260716_233457/`
    反転させる問題を発見（配備の前提条件として文書化）。
 6. **副産物**: 関節マッピング監査で肩の GT 対応誤り
    （`LeftShoulder`=鎖骨 → 正しくは `LeftUpperArm`）を発見。
-   `32_direction_detection/scripts/data_loader.py:90` にも同じ誤りがあり、
+   `5_direction/scripts/data_loader.py:90` にも同じ誤りがあり、
    **論文数値に波及するため修正は要判断**。
 7. docs/ を時系列番号付きにリネーム（本ファイル含む）、README・参照を一括更新。
 8. **GT フリーモデルの再構築と別カメラ検証**（詳細は
    [`08_GT_FREE_CHEATSHEET_MODEL.md`](08_GT_FREE_CHEATSHEET_MODEL.md)）
    推論時 GT ゼロのパイプライン（UV 擬似ワールド → 中央値+4×MAD →
    カルマン RTS → 3 点角 → 進行位置索引のバイアス表を線形補間で減算）を
-   `20_pose_correction/run_gt_free_model.py` に実装。(3.0,1.0,0.0) で較正した
+   `2_pose/run_gt_free_model.py` に実装。(3.0,1.0,0.0) で較正した
    カンニングペーパーを別動画 (3.2,1.1,0.4) に適用し、角度 MAE
    膝 42〜46% / 肘 71〜78% 改善（完全 out-of-sample）。
    **系統誤差は視方位ロックでなく歩行位相ロック**という知見を獲得。
@@ -175,16 +175,16 @@ v1 処理結果の退避先: `_backup_v1_outputs_20260716_233457/`
 
     | 旧 | 新 |
     |----|----|
-    | `01_input_videos` | `10_input_videos` |
-    | `02_mediapipe_v2` | `20_pose_correction`（姿勢抽出＋補正モデル） |
-    | `03_joint_angle_mae` | `30_joint_angle_mae` |
-    | `04_max_angle_error` | `31_max_angle_error` |
-    | `05_direction_detection` | `32_direction_detection` |
-    | `06_theta_verification` | `33_theta_verification` |
-    | `09_calibration_framework` | `40_calibration_framework` |
-    | `07_dashboard` | `50_dashboard` |
-    | `01_input_photos` | `90_legacy_v1/input_photos` |
-    | `02_mediapipe_processed` | `90_legacy_v1/mediapipe_processed` |
+    | `01_input_videos` | `1_input` |
+    | `02_mediapipe_v2` | `2_pose`（姿勢抽出＋補正モデル） |
+    | `03_joint_angle_mae` | `3_joint_angle_mae` |
+    | `04_max_angle_error` | `4_max_angle_error` |
+    | `05_direction_detection` | `5_direction` |
+    | `06_theta_verification` | `6_theta_check` |
+    | `09_calibration_framework` | `7_correction` |
+    | `07_dashboard` | `8_dashboard` |
+    | `01_input_photos` | `9_legacy_v1/input_photos` |
+    | `02_mediapipe_processed` | `9_legacy_v1/mediapipe_processed` |
 
     参照 506 箇所を一括更新、`data_storage` へのジャンクション 17 本を新パスに
     貼り直し、`.gitignore` / `config.py` を更新。両入口（補正本線 `--step 1`、
@@ -207,7 +207,7 @@ python run_world_phase_correction.py --history # 過程の実験（docs/07, 08, 
 python run_v2_pipeline.py --no-dashboard
 
 # 時系列グラフ（現在の DATASET_VERSION に応じて output/v1 or v2）
-cd 40_calibration_framework
+cd 7_correction
 python scripts/plot_angle_timeseries.py \
   --camera CapturedFrames_4.0_1.0_0.0 --height 1.0 \
   --joints L_Elbow R_Elbow L_Knee R_Knee

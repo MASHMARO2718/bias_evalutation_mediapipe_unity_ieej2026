@@ -10,13 +10,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # プロジェクト一式をコピー（ビルドコンテキストはプロジェクトルート）
 COPY . .
 
-# ダッシュボード用データ（32_direction_detection/output）が含まれる前提
+# ダッシュボード用データ（5_direction/output）が含まれる前提
 # データがない場合は起動時にエラー。事前に python run.py --dashboard で生成するか、
-# ボリュームマウントで 32_direction_detection/output を渡すこと
+# ボリュームマウントで 5_direction/output を渡すこと
 
 EXPOSE 8050
 
 ENV DASH_HOST=0.0.0.0
 ENV DASH_DEBUG=false
 
-CMD ["python", "50_dashboard/app.py"]
+CMD ["python", "8_dashboard/app.py"]

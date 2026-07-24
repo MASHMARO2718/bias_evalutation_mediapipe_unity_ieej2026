@@ -2,7 +2,7 @@
 """
 MotionTrack パイプライン実行
 
-初見ユーザー向け: 画像を 90_legacy_v1/input_photos に置いて python run.py で MediaPipe〜検証まで自動実行（既定で 50_dashboard 起動）。
+初見ユーザー向け: 画像を 9_legacy_v1/input_photos に置いて python run.py で MediaPipe〜検証まで自動実行（既定で 8_dashboard 起動）。
 
 使い方:
   python run.py                    # 全パイプライン（01画像→02 CSV→MAE/最大角/方向角→検証→07ダッシュボード）
@@ -16,15 +16,15 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).parent
-INPUT_PHOTOS = ROOT / "90_legacy_v1/input_photos"
-MP_PROCESSED = ROOT / "90_legacy_v1/mediapipe_processed"
+INPUT_PHOTOS = ROOT / "9_legacy_v1/input_photos"
+MP_PROCESSED = ROOT / "9_legacy_v1/mediapipe_processed"
 
 STEPS = [
     ("0", None, "MediaPipe: 画像→CSV (01→02)", [None], "mediapipe"),  # 特別処理
-    ("1", "30_joint_angle_mae", "3点角MAE計算", ["Y=0.5", "Y=1.0", "Y=1.5", "Y=2.0"], "run_cal_mae.py"),
-    ("2", "30_joint_angle_mae", "MAE統計テーブル作成", [None], "create_statistics_table.py"),
-    ("3", "31_max_angle_error", "最大角度誤差計算", ["Y=0.5", "Y=1.0", "Y=1.5", "Y=2.0"], "run_calculate_max.py"),
-    ("4", "32_direction_detection", "方向角・相関分析", [None], None),  # 2スクリプト
+    ("1", "3_joint_angle_mae", "3点角MAE計算", ["Y=0.5", "Y=1.0", "Y=1.5", "Y=2.0"], "run_cal_mae.py"),
+    ("2", "3_joint_angle_mae", "MAE統計テーブル作成", [None], "create_statistics_table.py"),
+    ("3", "4_max_angle_error", "最大角度誤差計算", ["Y=0.5", "Y=1.0", "Y=1.5", "Y=2.0"], "run_calculate_max.py"),
+    ("4", "5_direction", "方向角・相関分析", [None], None),  # 2スクリプト
     ("5", None, "論文データ検証", [None], "verify_paper_data.py"),
 ]
 
@@ -61,7 +61,7 @@ def run_step(step_num: str) -> bool:
     print(f"\n=== ステップ {num}: {desc} ===")
 
     if num == "0":
-        # MediaPipe: 90_legacy_v1/input_photos → 90_legacy_v1/mediapipe_processed
+        # MediaPipe: 9_legacy_v1/input_photos → 9_legacy_v1/mediapipe_processed
         if not _has_images(INPUT_PHOTOS):
             print(f"スキップ: {INPUT_PHOTOS} に画像がありません")
             return True
@@ -75,7 +75,7 @@ def run_step(step_num: str) -> bool:
 
     if num == "4":
         # 05: process_all_data + compute_correlation
-        cwd = ROOT / "32_direction_detection"
+        cwd = ROOT / "5_direction"
         if not run_cmd([sys.executable, "process_all_data.py"], cwd):
             return False
         if not run_cmd([sys.executable, "scripts/compute_correlation.py"], cwd):
@@ -92,7 +92,7 @@ def run_step(step_num: str) -> bool:
     for sub in subdirs:
         cwd = ROOT / folder / sub
         if num == "3":
-            cwd = ROOT / folder / "calculation" / sub  # 31_max_angle_error/calculation/Y=...
+            cwd = ROOT / folder / "calculation" / sub  # 4_max_angle_error/calculation/Y=...
         if not cwd.exists():
             print(f"スキップ（フォルダなし）: {cwd}")
             continue
@@ -103,7 +103,7 @@ def run_step(step_num: str) -> bool:
 
 def run_dashboard_only() -> bool:
     """ダッシュボード用データのみ（06の処理のみ）"""
-    print("\n=== ダッシュボード用データ生成（32_direction_detection）===")
+    print("\n=== ダッシュボード用データ生成（5_direction）===")
     return run_step("4")
 
 
@@ -119,7 +119,7 @@ def run_full(skip_mediapipe: bool = False, launch_dashboard: bool = False) -> bo
     print("\n=== 全パイプライン完了 ===")
     if launch_dashboard:
         print("\n>>> ダッシュボードを起動します...")
-        return run_cmd([sys.executable, "50_dashboard/app.py"], ROOT)
+        return run_cmd([sys.executable, "8_dashboard/app.py"], ROOT)
     return True
 
 
@@ -145,7 +145,7 @@ def main():
     if args.dashboard:
         ok = run_dashboard_only()
         if ok:
-            run_cmd([sys.executable, "50_dashboard/app.py"], ROOT)
+            run_cmd([sys.executable, "8_dashboard/app.py"], ROOT)
     elif args.step:
         ok = run_step(args.step)
     else:

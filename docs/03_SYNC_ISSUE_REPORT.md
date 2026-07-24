@@ -12,7 +12,7 @@ Unity GT（`synced_joint_positions.csv`）と MediaPipe が処理した画像フ
 **約 3 フレーム（≈ 99 ms）の時刻ずれ**が存在することを発見した。
 
 これは「補正が正しく機能しているか」を確認するためにフレームごとの角度時系列グラフを
-可視化したことで発覚した（`40_calibration_framework/scripts/plot_angle_timeseries.py`）。
+可視化したことで発覚した（`7_correction/scripts/plot_angle_timeseries.py`）。
 
 ---
 
@@ -154,8 +154,8 @@ gt_aligned = gt.assign(frame_id=gt["frame_id"] + LAG)  # LAG = 3
 
 | ファイル | 説明 |
 |---------|------|
-| `40_calibration_framework/scripts/plot_angle_timeseries.py` | 位相ずれを発見した可視化スクリプト |
-| `40_calibration_framework/scripts/output/angle_timeseries_R_Elbow_*.png` | 位相ずれが視覚的に確認できるグラフ |
+| `7_correction/scripts/plot_angle_timeseries.py` | 位相ずれを発見した可視化スクリプト |
+| `7_correction/scripts/output/angle_timeseries_R_Elbow_*.png` | 位相ずれが視覚的に確認できるグラフ |
 | `paper/IEEJ_01/source/IEEJ_en/main.tex` §3.2 | 旧キャプチャ方式の記述 |
 | `docs/04_UNITY_VIDEO_CAPTURE_PROMPT.md` | Unity コード書き換えエージェントへのプロンプト |
 
@@ -164,9 +164,9 @@ gt_aligned = gt.assign(frame_id=gt["frame_id"] + LAG)  # LAG = 3
 ## 次のアクション
 
 - [x] Unity プロジェクトの `FrameCapturer` / `SyncedJointRecorder` を動画キャプチャ方式に書き換え  
-      → 完了（2026-07-16）。新データは `10_input_videos/`
+      → 完了（2026-07-16）。新データは `1_input/`
 - [x] 新方式でデータを再収集し、同期確認  
-      → v2 時系列でラグ **0±2 フレーム**（旧 −3）。比較図: `40_calibration_framework/scripts/output/v1` vs `v2`
+      → v2 時系列でラグ **0±2 フレーム**（旧 −3）。比較図: `7_correction/scripts/output/v1` vs `v2`
 - [x] 再収集データで MAE・方向角・校正パイプラインを再実行（03〜07, 09）
 - [ ] IEEJ_02 論文の数値・図を v2 結果に更新する  
       → 進捗全体: [`docs/00_PROGRESS.md`](00_PROGRESS.md)

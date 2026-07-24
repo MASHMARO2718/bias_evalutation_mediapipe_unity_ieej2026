@@ -1,9 +1,9 @@
 # pose_world_landmarks 単独の GT フリー補正 — UV 擬似ワールド不使用実験
 
 **作成**: 2026-07-19
-**実装**: `20_pose_correction/run_world_landmark_model.py`
+**実装**: `2_pose/run_world_landmark_model.py`
 （world 抽出: `extract_world_landmarks.py` → `mediapipe_world_csv/`）
-**出力**: `20_pose_correction/world_landmark_model/`
+**出力**: `2_pose/world_landmark_model/`
 **関連**: [`08`](08_GT_FREE_CHEATSHEET_MODEL.md)（UV 系の現行モデル）、
 [`10`](10_PHASE_EXPLICIT_MODEL_PROPOSAL.md)（索引 4 方式・アンカー破壊）
 
@@ -98,15 +98,15 @@ W-phase の推論時入力は **MediaPipe world 出力と較正表だけ**。
 
 | パス | 内容 |
 |---|---|
-| `20_pose_correction/extract_world_landmarks.py` | world landmarks 抽出（2 動画再処理） |
-| `20_pose_correction/mediapipe_world_csv/` | 抽出済み world CSV |
-| `20_pose_correction/run_world_landmark_model.py` | 較正→検証の通し実行 |
-| `20_pose_correction/world_landmark_model/SUMMARY.md` | 数値サマリ |
+| `2_pose/extract_world_landmarks.py` | world landmarks 抽出（2 動画再処理） |
+| `2_pose/mediapipe_world_csv/` | 抽出済み world CSV |
+| `2_pose/run_world_landmark_model.py` | 較正→検証の通し実行 |
+| `2_pose/world_landmark_model/SUMMARY.md` | 数値サマリ |
 | `.../world_model_mae.csv` | 全数値 |
 | `.../world_vs_uv_comparison.png` | **主図**: UV 系 vs world 系 7 構成の MAE 比較 |
 | `.../val_world_timeseries.png` | 検証 4 角度の時系列（GT / world raw / 補正後） |
 | `.../world_index_diagnostics.png` | ヨー・bearing 索引の診断 |
 | `.../world_yaw_bias_scatter.png` | ヨー vs 角度誤差の散布 |
 
-再実行: `cd 20_pose_correction && python extract_world_landmarks.py &&
+再実行: `cd 2_pose && python extract_world_landmarks.py &&
 python run_world_landmark_model.py`

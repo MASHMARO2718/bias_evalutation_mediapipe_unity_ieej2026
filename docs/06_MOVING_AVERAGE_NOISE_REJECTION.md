@@ -6,9 +6,9 @@
 **歩行方向に基づく時間方向フィルタ**であり、カメラ視線方向解析（\(MC_n\)）とは役割が異なる（後述の対応表を参照）。
 
 > 状態: **実装済み**（案 B 座標）。  
-> スクリプト: `20_pose_correction/run_ma_noise_rejection.py`  
-> 結果: `20_pose_correction/ma_noise_rejection/results/`  
-> ダッシュボード: `40_calibration_framework/dashboard` → **MA Noise** タブ
+> スクリプト: `2_pose/run_ma_noise_rejection.py`  
+> 結果: `2_pose/ma_noise_rejection/results/`  
+> ダッシュボード: `7_correction/dashboard` → **MA Noise** タブ
 
 ---
 
@@ -205,9 +205,9 @@ GT 自体の微小横ブレを真値に含めたくない場合に使う。
 
 | 既存処理 | 本手法との関係 |
 |----------|----------------|
-| 関節角度 MAE（`30_joint_angle_mae`） | 位置 \(E\) ではなく角度差。本フィルタ後のフレームマスクを共有可能 |
+| 関節角度 MAE（`3_joint_angle_mae`） | 位置 \(E\) ではなく角度差。本フィルタ後のフレームマスクを共有可能 |
 | Error·MC / \(\cos\phi\)（実装済み） | \(MC_n\) 解析。外れ値マスク後に再集計すると解釈が安定しうる |
-| 方向角（`32_direction_detection`） | 腰相対+Y反転を \(m^{\mathrm{MP}}\) 整備に流用可能 |
+| 方向角（`5_direction`） | 腰相対+Y反転を \(m^{\mathrm{MP}}\) 整備に流用可能 |
 | キャリブレーション角度補正 | 別系統（角度バイアス）。本手法は **位置系列のスパイク除去** |
 
 ---
@@ -244,6 +244,6 @@ GT 自体の微小横ブレを真値に含めたくない場合に使う。
 
 - カメラ–誤差解析: [`05_CAMERA_JOINT_ERROR_MC_ANALYSIS.md`](05_CAMERA_JOINT_ERROR_MC_ANALYSIS.md)
 - GT / 同期: [`04_UNITY_VIDEO_CAPTURE_PROMPT.md`](04_UNITY_VIDEO_CAPTURE_PROMPT.md), [`03_SYNC_ISSUE_REPORT.md`](03_SYNC_ISSUE_REPORT.md)
-- MP 座標系: `33_theta_verification/MEDIAPIPE_COORDINATE_SYSTEM.md`
-- Error·MC 実装: `20_pose_correction/run_error_mc_analysis.py`
-- ダッシュボード: `40_calibration_framework/dashboard/app.py`（Error · MC タブ）
+- MP 座標系: `6_theta_check/MEDIAPIPE_COORDINATE_SYSTEM.md`
+- Error·MC 実装: `2_pose/run_error_mc_analysis.py`
+- ダッシュボード: `7_correction/dashboard/app.py`（Error · MC タブ）

@@ -20,7 +20,7 @@ venv
 *.swo
 
 # 画像・動画（大容量）
-90_legacy_v1/input_photos/
+9_legacy_v1/input_photos/
 **/*.png
 **/*.jpg
 **/*.jpeg
@@ -34,7 +34,7 @@ venv
 *.log
 
 # 検証テスト（本番不要）
-33_theta_verification/
+6_theta_check/
 
 # ドキュメント（必要なら含める）
 # *.md は含める（README等）

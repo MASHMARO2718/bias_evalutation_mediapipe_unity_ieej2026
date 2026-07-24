@@ -12,5 +12,5 @@ services:
       - DASH_DEBUG=false
     # データをボリュームで渡す場合（ローカルで生成済みの output を使用）
     # volumes:
-    #   - ./32_direction_detection/output:/app/32_direction_detection/output:ro
+    #   - ./5_direction/output:/app/5_direction/output:ro
     #   - ./synced_joint_positions.csv:/app/synced_joint_positions.csv:ro

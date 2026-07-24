@@ -14,13 +14,13 @@
 **/*.mkv
 
 # 写真出力ディレクトリは全て除外（サイズが大きいため）
-90_legacy_v1/input_photos/
+9_legacy_v1/input_photos/
 
 # 中間生成物の実体（構成は data_storage/README.md）
 data_storage/**
 !data_storage/README.md
 
-# 誤ってリポジトリ直下に作られたカメラ高さフォルダ（正: 90_legacy_v1/mediapipe_processed/Y=0.5/ など）
+# 誤ってリポジトリ直下に作られたカメラ高さフォルダ（正: 9_legacy_v1/mediapipe_processed/Y=0.5/ など）
 /0.5/
 /1.0/
 /1.5/
@@ -51,6 +51,10 @@ build/
 *.swp
 *.swo
 
+# ローカルツール設定（Claude Code / Serena）
+.claude/
+.serena/
+
 # OS
 .DS_Store
 Thumbs.db
@@ -59,32 +63,32 @@ Thumbs.db
 .ipynb_checkpoints/
 
 # ─── 旧パス（data_storage へのジャンクション先。誤追跡防止） ───
-90_legacy_v1/mediapipe_processed/mediapipe_processed_csv/
-20_pose_correction/mediapipe_processed_csv/
-20_pose_correction/mediapipe_processed_csv_additional/
-20_pose_correction/mediapipe_world_csv/
-20_pose_correction/overlay_videos/
-20_pose_correction/uv_pseudo_world_correction/results*/
-20_pose_correction/ma_noise_rejection/results/
-20_pose_correction/error_mc_analysis/results/
-20_pose_correction/world_landmark_model/
-20_pose_correction/phase_explicit_model/
-20_pose_correction/gt_free_model/**
-!20_pose_correction/gt_free_model/analysis/
-!20_pose_correction/gt_free_model/analysis/**
-20_pose_correction/gt_free_model/analysis/**/__pycache__/
+9_legacy_v1/mediapipe_processed/mediapipe_processed_csv/
+2_pose/mediapipe_processed_csv/
+2_pose/mediapipe_processed_csv_additional/
+2_pose/mediapipe_world_csv/
+2_pose/overlay_videos/
+2_pose/uv_pseudo_world_correction/results*/
+2_pose/ma_noise_rejection/results/
+2_pose/error_mc_analysis/results/
+2_pose/world_landmark_model/
+2_pose/phase_explicit_model/
+2_pose/gt_free_model/**
+!2_pose/gt_free_model/analysis/
+!2_pose/gt_free_model/analysis/**
+2_pose/gt_free_model/analysis/**/__pycache__/
 
-30_joint_angle_mae/joint_angle_mae_csv/
-30_joint_angle_mae/*.csv
-30_joint_angle_mae/*.tex
+3_joint_angle_mae/joint_angle_mae_csv/
+3_joint_angle_mae/*.csv
+3_joint_angle_mae/*.tex
 
-32_direction_detection/output/
+5_direction/output/
 
-40_calibration_framework/outputs/bias_tables/
-40_calibration_framework/outputs/results/
-40_calibration_framework/outputs/figures/
-40_calibration_framework/outputs/RUN_REPORT.md
-40_calibration_framework/scripts/output/
+7_correction/outputs/bias_tables/
+7_correction/outputs/results/
+7_correction/outputs/figures/
+7_correction/outputs/RUN_REPORT.md
+7_correction/scripts/output/
 
 # 一時バックアップ（不要）
 _backup_*/

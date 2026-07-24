@@ -10,25 +10,25 @@ ROOT = Path(__file__).parent
 
 # 削除対象ディレクトリ（パイプライン出力）
 CLEAN_DIRS = [
-    ROOT / "90_legacy_v1/mediapipe_processed" / "Y=0.5",
-    ROOT / "90_legacy_v1/mediapipe_processed" / "Y=1.0",
-    ROOT / "90_legacy_v1/mediapipe_processed" / "Y=1.5",
-    ROOT / "90_legacy_v1/mediapipe_processed" / "Y=2.0",
-    ROOT / "30_joint_angle_mae" / "Y=0.5",
-    ROOT / "30_joint_angle_mae" / "Y=1.0",
-    ROOT / "30_joint_angle_mae" / "Y=1.5",
-    ROOT / "30_joint_angle_mae" / "Y=2.0",
-    ROOT / "31_max_angle_error" / "calculation" / "Y=0.5",
-    ROOT / "31_max_angle_error" / "calculation" / "Y=1.0",
-    ROOT / "31_max_angle_error" / "calculation" / "Y=1.5",
-    ROOT / "31_max_angle_error" / "calculation" / "Y=2.0",
-    ROOT / "31_max_angle_error" / "max_angle_error_heatmap" / "Y=0.5",
-    ROOT / "31_max_angle_error" / "max_angle_error_heatmap" / "Y=1.0",
-    ROOT / "31_max_angle_error" / "max_angle_error_heatmap" / "Y=1.5",
-    ROOT / "31_max_angle_error" / "max_angle_error_heatmap" / "Y=2.0",
-    ROOT / "32_direction_detection" / "output",
-    ROOT / "33_theta_verification" / "output",
-    ROOT / "33_theta_verification" / "coordinate_fix_verification" / "output",
+    ROOT / "9_legacy_v1/mediapipe_processed" / "Y=0.5",
+    ROOT / "9_legacy_v1/mediapipe_processed" / "Y=1.0",
+    ROOT / "9_legacy_v1/mediapipe_processed" / "Y=1.5",
+    ROOT / "9_legacy_v1/mediapipe_processed" / "Y=2.0",
+    ROOT / "3_joint_angle_mae" / "Y=0.5",
+    ROOT / "3_joint_angle_mae" / "Y=1.0",
+    ROOT / "3_joint_angle_mae" / "Y=1.5",
+    ROOT / "3_joint_angle_mae" / "Y=2.0",
+    ROOT / "4_max_angle_error" / "calculation" / "Y=0.5",
+    ROOT / "4_max_angle_error" / "calculation" / "Y=1.0",
+    ROOT / "4_max_angle_error" / "calculation" / "Y=1.5",
+    ROOT / "4_max_angle_error" / "calculation" / "Y=2.0",
+    ROOT / "4_max_angle_error" / "max_angle_error_heatmap" / "Y=0.5",
+    ROOT / "4_max_angle_error" / "max_angle_error_heatmap" / "Y=1.0",
+    ROOT / "4_max_angle_error" / "max_angle_error_heatmap" / "Y=1.5",
+    ROOT / "4_max_angle_error" / "max_angle_error_heatmap" / "Y=2.0",
+    ROOT / "5_direction" / "output",
+    ROOT / "6_theta_check" / "output",
+    ROOT / "6_theta_check" / "coordinate_fix_verification" / "output",
 ]
 
 # 絶対に削除しないファイル名
@@ -48,8 +48,8 @@ def main():
             deleted.append(f.relative_to(ROOT))
             print(f"削除: {f.relative_to(ROOT)}")
 
-    # 90_legacy_v1/mediapipe_processed 直下のCSV（Y= 以外）
-    mp_root = ROOT / "90_legacy_v1/mediapipe_processed"
+    # 9_legacy_v1/mediapipe_processed 直下のCSV（Y= 以外）
+    mp_root = ROOT / "9_legacy_v1/mediapipe_processed"
     if mp_root.exists():
         for f in mp_root.glob("*.csv"):
             if f.name in KEEP:
@@ -58,8 +58,8 @@ def main():
             deleted.append(f.relative_to(ROOT))
             print(f"削除: {f.relative_to(ROOT)}")
 
-    # 30_joint_angle_mae 直下（統合 CSV 等）
-    cal_mae = ROOT / "30_joint_angle_mae"
+    # 3_joint_angle_mae 直下（統合 CSV 等）
+    cal_mae = ROOT / "3_joint_angle_mae"
     if cal_mae.exists():
         for f in cal_mae.glob("*.csv"):
             if f.name in KEEP:

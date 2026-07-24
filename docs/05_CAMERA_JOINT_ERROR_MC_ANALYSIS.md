@@ -108,9 +108,9 @@ MC_n = C - GT^{(n)}
 
 | 種別 | パス | 中身 |
 |------|------|------|
-| 動画 | `10_input_videos/CapturedFrames_*/video.mp4` | 1280×720 など |
-| GT | `10_input_videos/CapturedFrames_*/gt_joints.csv` | Unity `HumanBodyBones` ワールド座標 [m] |
-| MediaPipe | `20_pose_correction/mediapipe_processed_csv/Y=*/CapturedFrames_*.csv` | `pose_landmarks`（正規化画像座標） |
+| 動画 | `1_input/CapturedFrames_*/video.mp4` | 1280×720 など |
+| GT | `1_input/CapturedFrames_*/gt_joints.csv` | Unity `HumanBodyBones` ワールド座標 [m] |
+| MediaPipe | `2_pose/mediapipe_processed_csv/Y=*/CapturedFrames_*.csv` | `pose_landmarks`（正規化画像座標） |
 | カメラ位置 | フォルダ名 `CapturedFrames_{X}_{Y}_{Z}` | \(C = (X,Y,Z)\) [m]（Unity ワールド想定） |
 
 ### 4.2 座標系の現状
@@ -129,13 +129,13 @@ MC_n = C - GT^{(n)}
 
 | 解析 | 座標の扱い | 本メモ（Error·MC）との関係 |
 |------|------------|---------------------------|
-| 関節角度 MAE（`30_joint_angle_mae`） | 各系で独立に 3 点角 → 角度差のみ比較。位置の共通化なし | 位置誤差ベクトルは使っていない（矛盾ではないが別指標） |
-| 方向角（`32_direction_detection`） | 腰相対 + **MP の Y 反転**のうえ \(\theta,\psi\) を比較 | 相対化・Y 合わせの思想は近いが、\(Error\) ベクトルや \(MC\) 内積は未実装 |
-| キャリブレーション（`40_calibration_framework`） | 主に角度バイアス・方位ビン | 本メモは位置ベクトル指標の追加案 |
+| 関節角度 MAE（`3_joint_angle_mae`） | 各系で独立に 3 点角 → 角度差のみ比較。位置の共通化なし | 位置誤差ベクトルは使っていない（矛盾ではないが別指標） |
+| 方向角（`5_direction`） | 腰相対 + **MP の Y 反転**のうえ \(\theta,\psi\) を比較 | 相対化・Y 合わせの思想は近いが、\(Error\) ベクトルや \(MC\) 内積は未実装 |
+| キャリブレーション（`7_correction`） | 主に角度バイアス・方位ビン | 本メモは位置ベクトル指標の追加案 |
 
 方向角用変換の実装箇所:
 
-- `32_direction_detection/scripts/coordinate_transform.py`  
+- `5_direction/scripts/coordinate_transform.py`  
   - `transform_ground_truth`: 腰中心相対化  
   - `transform_mediapipe`: 腰中心相対化 + **Y 反転**
 
@@ -147,7 +147,7 @@ MC_n = C - GT^{(n)}
 
 - カメラ位置 \(C\) はフォルダ名から取得できる（既存評価と同じ）
 - GT の \(M\)（腰）と関節ワールド座標は `gt_joints.csv` から取れる
-- 「腰を原点にした相対座標」という発想は `32_direction_detection` と一致
+- 「腰を原点にした相対座標」という発想は `5_direction` と一致
 - フレーム対応は v2 で `frame_id` 同期を前提にできる（v1 の約 3 フレームずれ問題は別途注意）
 
 **整合していない / 不足**
@@ -195,8 +195,8 @@ MC_n = C - GT^{(n)}
 スクリプト:
 
 ```bash
-python 20_pose_correction/run_error_mc_analysis.py
-# テスト: python 20_pose_correction/run_error_mc_analysis.py --max_cameras 5
+python 2_pose/run_error_mc_analysis.py
+# テスト: python 2_pose/run_error_mc_analysis.py --max_cameras 5
 ```
 
 処理内容（案 B）:
@@ -206,7 +206,7 @@ python 20_pose_correction/run_error_mc_analysis.py
 3. \(MC_n = C - GT^{(n)}\)（カメラ − 関節 \(n\) の GT ワールド位置）
 4. \(\cos\phi_n = (Error\cdot MC_n)/(|Error||MC_n|)\)（\|MC\|・cos は関節ごと）
 
-出力ディレクトリ: `20_pose_correction/error_mc_analysis/results/`
+出力ディレクトリ: `2_pose/error_mc_analysis/results/`
 
 | ファイル | 内容 |
 |----------|------|
@@ -241,12 +241,12 @@ python 20_pose_correction/run_error_mc_analysis.py
 
 ## 8. 関連ファイル
 
-- 本解析スクリプト: `20_pose_correction/run_error_mc_analysis.py`
-- 出力: `20_pose_correction/error_mc_analysis/results/`
+- 本解析スクリプト: `2_pose/run_error_mc_analysis.py`
+- 出力: `2_pose/error_mc_analysis/results/`
 - 移動平均ノイズ除去（設計）: [`06_MOVING_AVERAGE_NOISE_REJECTION.md`](06_MOVING_AVERAGE_NOISE_REJECTION.md)
 - GT / 同期: `docs/04_UNITY_VIDEO_CAPTURE_PROMPT.md`, `docs/03_SYNC_ISSUE_REPORT.md`
-- MP 座標系: `33_theta_verification/MEDIAPIPE_COORDINATE_SYSTEM.md`
-- 腰相対 + Y 反転: `32_direction_detection/scripts/coordinate_transform.py`
-- 関節 3 点角（位置非対応）: `30_joint_angle_mae/coordinate_angle_comparison.py`
-- MP 検出 CSV: `20_pose_correction/mediapipe_processed_csv/`
-- GT CSV: `10_input_videos/CapturedFrames_*/gt_joints.csv`
+- MP 座標系: `6_theta_check/MEDIAPIPE_COORDINATE_SYSTEM.md`
+- 腰相対 + Y 反転: `5_direction/scripts/coordinate_transform.py`
+- 関節 3 点角（位置非対応）: `3_joint_angle_mae/coordinate_angle_comparison.py`
+- MP 検出 CSV: `2_pose/mediapipe_processed_csv/`
+- GT CSV: `1_input/CapturedFrames_*/gt_joints.csv`
