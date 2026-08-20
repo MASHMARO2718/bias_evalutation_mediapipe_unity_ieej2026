@@ -1,0 +1,7 @@
+# NTFS(Windows) → ext4(Linux) 移行に伴う改行コード差分の再発防止。
+# 移行時に CRLF が LF へ変換され、内容が同一のまま 599 ファイルが
+# 差分扱いになったため、テキスト種別を明示して LF に固定する。
+*.csv text eol=lf
+*.py  text eol=lf
+*.txt text eol=lf
+*.md  text eol=lf
