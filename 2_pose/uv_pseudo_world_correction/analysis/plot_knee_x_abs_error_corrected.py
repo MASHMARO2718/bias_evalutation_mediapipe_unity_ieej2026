@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-REPO = Path(r"C:\projects\MOTIONTRACK\bias_evaluation_,mediapipe_unity_ieej2026")
+REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "2_pose"))
 sys.path.insert(0, str(REPO))
 

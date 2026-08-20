@@ -1,7 +1,7 @@
 ﻿import time, subprocess, sys
 from pathlib import Path
 
-ROOT = Path(r"c:\projects\MOTIONTRACK\bias_evaluation_,mediapipe_unity_ieej2026")
+ROOT = Path(__file__).resolve().parents[1]
 MP_DIR = ROOT / "2_pose" / "mediapipe_processed_csv"
 TARGET = 576
 LOG = ROOT / "2_pose" / "pipeline_auto_run.log"
